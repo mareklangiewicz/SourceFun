@@ -1,0 +1,31 @@
+plugins {
+    `java-gradle-plugin`
+    kotlin("jvm") version "1.3.72"
+    `maven-publish`
+}
+
+group = "com.github.langara.sourcefun"
+version = "0.0.1"
+
+gradlePlugin {
+    plugins {
+        create("helloFunPlugin") {
+            id = "pl.mareklangiewicz.hellofun"
+            implementationClass = "pl.mareklangiewicz.HelloFunPlugin"
+        }
+        create("sourceFunPlugin") {
+            id = "pl.mareklangiewicz.sourcefun"
+            implementationClass = "pl.mareklangiewicz.SourceFunPlugin"
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation(kotlin("stdlib"))
+    testImplementation("org.junit.jupiter", "junit-jupiter-api", "5.5.2")
+    testRuntimeOnly("org.junit.jupiter", "junit-jupiter-engine", "5.5.2")
+}
