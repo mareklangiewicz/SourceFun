@@ -9,10 +9,6 @@ version = "0.0.1"
 
 gradlePlugin {
     plugins {
-        create("helloFunPlugin") {
-            id = "pl.mareklangiewicz.hellofun"
-            implementationClass = "pl.mareklangiewicz.HelloFunPlugin"
-        }
         create("sourceFunPlugin") {
             id = "pl.mareklangiewicz.sourcefun"
             implementationClass = "pl.mareklangiewicz.SourceFunPlugin"

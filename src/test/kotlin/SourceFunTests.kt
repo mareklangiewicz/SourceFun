@@ -6,12 +6,12 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 // FIXME: why this is not running??
-class HelloFunPluginTest {
+class SourceFunTests {
 
-    @Test fun helloFunTest1() {
+    @Test fun sourceFunTest1() {
         val project = ProjectBuilder.builder().build()!!
-        project.pluginManager.apply("pl.mareklangiewicz.hellofun")
+        project.pluginManager.apply("pl.mareklangiewicz.sourcefun")
 
-        assertTrue(project.tasks.getByName("hello") is Task)
+        assertTrue(project.tasks.getByName("sourceFun") is Task)
     }
 }
