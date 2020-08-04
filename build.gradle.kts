@@ -1,6 +1,6 @@
 plugins {
     `java-gradle-plugin`
-    kotlin("jvm") version "1.3.72"
+    `kotlin-dsl`
     `maven-publish`
 }
 
