@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     `java-gradle-plugin`
-    kotlin("jvm") version "1.4.0-rc"
+    `kotlin-dsl`
     `maven-publish`
 }
 
