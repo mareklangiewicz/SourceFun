@@ -49,7 +49,7 @@ open class SourceFunTask : SourceTask() {
 
     @TaskAction
     fun execute() {
-        source.visit { action() } // FIXME: do not use "visit" we want user to write explicit loops
+        source.visit { action(it) } // FIXME: do not use "visit" we want user to write explicit loops
             // TODO: define own MINIMAL (micro) multiplatform abstractions for files and file trees
     }
 }
