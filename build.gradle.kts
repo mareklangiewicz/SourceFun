@@ -26,12 +26,11 @@ dependencies {
     implementation(kotlin("stdlib"))
     compileOnly(gradleApi())
     compileOnly(gradleKotlinDsl())
+    testImplementation(gradleTestKit())
     testImplementation(gradleApi())
     testImplementation(gradleKotlinDsl())
     testImplementation(kotlin("test-junit"))
     testImplementation("org.jetbrains.kotlin:kotlin-gradle-plugin")
-    testImplementation("org.junit.jupiter", "junit-jupiter-api", "5.5.2")
-    testRuntimeOnly("org.junit.jupiter", "junit-jupiter-engine", "5.5.2")
 }
 
 tasks.withType<KotlinCompile>().all {
