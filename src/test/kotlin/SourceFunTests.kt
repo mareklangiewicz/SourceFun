@@ -1,5 +1,6 @@
 package pl.mareklangiewicz.sourcefun
 
+import org.gradle.kotlin.dsl.apply
 import org.gradle.testfixtures.ProjectBuilder
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.TaskOutcome
@@ -8,7 +9,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import pl.mareklangiewicz.SourceFunTask
+import pl.mareklangiewicz.SourceFunPlugin
 import java.io.File
 import kotlin.test.assertEquals
 
@@ -51,10 +52,10 @@ class SourceFunTests {
     }
 
     @Test
-    fun sourceFunTest1() {
+    fun testSourceFunPluginApply() {
         val project = ProjectBuilder.builder().build()!!
-        project.pluginManager.apply("pl.mareklangiewicz.sourcefun")
-
-        assertTrue(project.tasks.getByName("sourceFun") is SourceFunTask)
+        project.pluginManager.apply(SourceFunPlugin::class)
+        // TODO_maybe: how to configure my plugin in such test? (so I can asset it creates appropriate tasks)
+        assertTrue(project.plugins.any { it is SourceFunPlugin })
     }
 }
