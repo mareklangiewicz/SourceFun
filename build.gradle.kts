@@ -20,6 +20,7 @@ gradlePlugin {
 
 repositories {
     mavenCentral()
+    maven { url = uri("https://jitpack.io") }
 }
 
 dependencies {
@@ -31,6 +32,7 @@ dependencies {
     testImplementation(gradleKotlinDsl())
     testImplementation(kotlin("test-junit"))
     testImplementation("org.jetbrains.kotlin:kotlin-gradle-plugin")
+    testImplementation(Deps.uspek)
 }
 
 tasks.withType<KotlinCompile>().all {
