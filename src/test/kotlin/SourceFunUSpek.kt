@@ -22,8 +22,7 @@ class SourceFunUSpek {
             if (it.failed) {
                 System.err.println(it.status)
                 throw it.end!!
-            }
-            else println(it.status)
+            } else println(it.status)
         }
     }
 
@@ -37,68 +36,72 @@ class SourceFunUSpek {
             project.plugins.any { it is SourceFunPlugin } eq true
         }
 
-        "On create temp dir" o {
-            lateinit var dir: File
-            try {
-                dir = File.createTempFile("uspekSourceFun", null).apply {
-                    delete() || error("Can not delete temp file: $this")
-                    mkdir() || error("Can not create dir: $this")
-                }
+        "On create temp project dir" o {
+            withTempBuildEnvironment { tempDir, settingsFile, buildFile ->
+                onSingleHelloWorld(tempDir, settingsFile, buildFile)
+            }
+        }
+    }
+}
 
-                "On dir" o {
+private fun withTempBuildEnvironment(code: (tempDir: File, settingsFile: File, buildFile: File) -> Unit) {
+    withTempDir { tempDir ->
+        val settingsFile = File(tempDir, "settings.gradle.kts")
+        settingsFile.createNewFile() || error("Can not create file: $settingsFile")
+        val buildFile = File(tempDir, "build.gradle.kts")
+        buildFile.createNewFile() || error("Can not create file: $buildFile")
+        code(tempDir, settingsFile, buildFile)
+    }
+}
 
-                    "On gradle settings kts file" o {
-                        val settingsFile = File(dir, "settings.gradle.kts")
-                        settingsFile.createNewFile() || error("Can not create file: $settingsFile")
+private fun withTempDir(tempDirPrefix: String = "uspek", code: (tempDir: File) -> Unit) {
+    lateinit var tempDir: File
+    try {
+        tempDir = File.createTempFile(tempDirPrefix, null).apply {
+            delete() || error("Can not delete temp file: $this")
+            mkdir() || error("Can not create dir: $this")
+        }
+        code(tempDir)
+    } finally {
+        tempDir.deleteRecursively() || error("Can not delete recursively dir: $tempDir")
+    }
+}
 
-                        "On gradle build kts file" o {
-                            val buildFile = File(dir, "build.gradle.kts")
-                            buildFile.createNewFile() || error("Can not create file: $buildFile")
+private fun onSingleHelloWorld(tempDir: File, settingsFile: File, buildFile: File) {
+    "On single hello world project" o {
+        settingsFile.writeText("""
+            rootProject.name = "hello-world"
+        """.trimIndent())
 
-                            "On single hello world project" o {
-                                settingsFile.writeText("""
-                                    rootProject.name = "hello-world"
-                                """.trimIndent())
-
-                                "On build file with helloWorld task" o {
-                                    buildFile.writeText("""
-                                        tasks.register("helloWorld") {
-                                            doLast {
-                                                println("Hello world!")
-                                            }
-                                        }
-                                    """.trimIndent())
-
-                                    "On gradle runner with temp dir" o {
-                                        val runner = GradleRunner.create().withProjectDir(dir)
-
-                                        "On task helloWorld" o {
-                                            runner.withArguments("helloWorld")
-
-                                            "On gradle build" o {
-                                                val result = runner.build()
-
-                                                "task helloWorld ends successfully" o { result.task(":helloWorld")?.outcome eq SUCCESS }
-                                                "output contains hello world message" o { result.output.contains("Hello world!") eq true }
-                                            }
-                                        }
-
-                                        "On non existing task" o {
-                                            runner.withArguments("blabla")
-
-                                            "gradle fails" o { runner.buildAndFail() }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+        "On build file with helloWorld task" o {
+            buildFile.writeText("""
+                tasks.register("helloWorld") {
+                    doLast {
+                        println("Hello world!")
                     }
                 }
-            }
-            finally {
-                dir.deleteRecursively() || error("Can not delete recursively dir: $dir")
-            }
+            """.trimIndent())
 
+            "On gradle runner with temp dir" o {
+                val runner = GradleRunner.create().withProjectDir(tempDir)
+
+                "On task helloWorld" o {
+                    runner.withArguments("helloWorld")
+
+                    "On gradle build" o {
+                        val result = runner.build()
+
+                        "task helloWorld ends successfully" o { result.task(":helloWorld")?.outcome eq SUCCESS }
+                        "output contains hello world message" o { result.output.contains("Hello world!") eq true }
+                    }
+                }
+
+                "On non existing task" o {
+                    runner.withArguments("blabla")
+
+                    "gradle fails" o { runner.buildAndFail() }
+                }
+            }
         }
     }
 }
