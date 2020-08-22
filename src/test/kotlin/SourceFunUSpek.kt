@@ -4,6 +4,7 @@ import org.gradle.kotlin.dsl.apply
 import org.gradle.testfixtures.ProjectBuilder
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.TaskOutcome.FAILED
+import org.gradle.testkit.runner.TaskOutcome.NO_SOURCE
 import org.gradle.testkit.runner.TaskOutcome.SUCCESS
 import org.junit.Test
 import pl.mareklangiewicz.SourceFunPlugin
@@ -40,6 +41,7 @@ class SourceFunUSpek {
         "On create temp project dir" o {
             withTempBuildEnvironment { tempDir, settingsFile, buildFile ->
                 onSingleHelloWorld(tempDir, settingsFile, buildFile)
+                onSourceFunPlugin(tempDir, settingsFile, buildFile)
             }
         }
     }
@@ -124,3 +126,61 @@ private fun onSingleHelloWorld(tempDir: File, settingsFile: File, buildFile: Fil
     }
 }
 
+private fun onSourceFunPlugin(tempDir: File, settingsFile: File, buildFile: File) {
+    "On single project with SourceFunPlugin" o {
+        settingsFile.writeText("""
+            rootProject.name = "project-with-sourcefun"
+        """.trimIndent())
+
+        "On build file with explicit SourceFunTasks" o {
+            buildFile.writeText("""
+                import pl.mareklangiewicz.SourceFunExtension
+                import pl.mareklangiewicz.SourceFunPlugin
+                import pl.mareklangiewicz.SourceRegexTask
+                import pl.mareklangiewicz.SourceFunTask
+                import pl.mareklangiewicz.Def
+                
+                plugins {
+                    id("pl.mareklangiewicz.sourcefun")
+                }
+                
+                sourceFun {
+                    + Def("funTask1", "fun1Src", "funTempOut") { println(file.absolutePath) }
+                    + Def("funTask2", "fun2Src", "funTempOut") { println(file.absolutePath) }
+                }
+                
+                tasks.register<SourceFunTask>("funTask3") {
+                    source("fun3Src")
+                    outputDir = file("funTempOut")
+                    action = { println(file.absolutePath) }
+                }
+                
+                tasks.register<SourceRegexTask>("regexExperiment") {
+                    source("regexTempSrc")
+                    outputDir = file("regexTempOut")
+                    match = ".*"
+                    replace = "XXX"
+                    doLast {
+                        println("fjkdslj")
+                    }
+                }
+            """.trimIndent())
+
+            "On gradle runner with temp dir" o {
+                val runner = GradleRunner.create()
+                    .withPluginClasspath()
+                    .withProjectDir(tempDir)
+
+                "On task funTask1" o {
+                    runner.withArguments("funTask1")
+
+                    "On gradle build" o {
+                        val result = runner.build()
+
+                        "task funTask1 ends with NO_SOURCE" o { result.task(":funTask1")?.outcome eq NO_SOURCE }
+                    }
+                }
+            }
+        }
+    }
+}
