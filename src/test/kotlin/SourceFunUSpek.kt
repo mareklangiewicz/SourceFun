@@ -2,6 +2,8 @@ package pl.mareklangiewicz.sourcefun
 
 import org.gradle.kotlin.dsl.apply
 import org.gradle.testfixtures.ProjectBuilder
+import org.gradle.testkit.runner.GradleRunner
+import org.gradle.testkit.runner.TaskOutcome.SUCCESS
 import org.junit.Test
 import pl.mareklangiewicz.SourceFunPlugin
 import pl.mareklangiewicz.uspek.eq
@@ -53,7 +55,42 @@ class SourceFunUSpek {
                             val buildFile = File(dir, "build.gradle.kts")
                             buildFile.createNewFile() || error("Can not create file: $buildFile")
 
-                            TODO("tests with $buildFile and $settingsFile")
+                            "On single hello world project" o {
+                                settingsFile.writeText("""
+                                    rootProject.name = "hello-world"
+                                """.trimIndent())
+
+                                "On build file with helloWorld task" o {
+                                    buildFile.writeText("""
+                                        tasks.register("helloWorld") {
+                                            doLast {
+                                                println("Hello world!")
+                                            }
+                                        }
+                                    """.trimIndent())
+
+                                    "On gradle runner with temp dir" o {
+                                        val runner = GradleRunner.create().withProjectDir(dir)
+
+                                        "On task helloWorld" o {
+                                            runner.withArguments("helloWorld")
+
+                                            "On gradle build" o {
+                                                val result = runner.build()
+
+                                                "task helloWorld ends successfully" o { result.task(":helloWorld")?.outcome eq SUCCESS }
+                                                "output contains hello world message" o { result.output.contains("Hello world!") eq true }
+                                            }
+                                        }
+
+                                        "On non existing task" o {
+                                            runner.withArguments("blabla")
+
+                                            "gradle fails" o { runner.buildAndFail() }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
