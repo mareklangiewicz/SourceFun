@@ -3,6 +3,7 @@ package pl.mareklangiewicz.sourcefun
 import org.gradle.kotlin.dsl.apply
 import org.gradle.testfixtures.ProjectBuilder
 import org.gradle.testkit.runner.GradleRunner
+import org.gradle.testkit.runner.TaskOutcome.FAILED
 import org.gradle.testkit.runner.TaskOutcome.SUCCESS
 import org.junit.Test
 import pl.mareklangiewicz.SourceFunPlugin
@@ -73,11 +74,18 @@ private fun onSingleHelloWorld(tempDir: File, settingsFile: File, buildFile: Fil
             rootProject.name = "hello-world"
         """.trimIndent())
 
-        "On build file with helloWorld task" o {
+        "On build file with example tasks" o {
             buildFile.writeText("""
                 tasks.register("helloWorld") {
                     doLast {
                         println("Hello world!")
+                    }
+                }
+                
+                tasks.register("helloFail") {
+                    doLast {
+                        println("The exception is coming!")
+                        throw RuntimeException("helloFail exception")
                     }
                 }
             """.trimIndent())
@@ -96,10 +104,20 @@ private fun onSingleHelloWorld(tempDir: File, settingsFile: File, buildFile: Fil
                     }
                 }
 
-                "On non existing task" o {
-                    runner.withArguments("blabla")
+                "On nonexistent task" o {
+                    runner.withArguments("someNonExistentTask")
 
                     "gradle fails" o { runner.buildAndFail() }
+                }
+
+                "On task helloFail" o {
+                    runner.withArguments("helloFail")
+                    "On gradle failing build" o {
+                        val result = runner.buildAndFail()
+
+                        "task helloFail ends with failure" o { result.task(":helloFail")?.outcome eq FAILED }
+                        "output contains hello fail message" o { result.output.contains("The exception is coming!") eq true }
+                    }
                 }
             }
         }
