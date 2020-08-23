@@ -24,8 +24,6 @@ repositories {
 }
 
 dependencies {
-    compileOnly(gradleApi())
-    testImplementation(gradleTestKit())
     testImplementation(Deps.junit4)
     testImplementation(Deps.uspek)
 }
