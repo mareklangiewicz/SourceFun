@@ -24,14 +24,9 @@ repositories {
 }
 
 dependencies {
-    implementation(kotlin("stdlib"))
     compileOnly(gradleApi())
-    compileOnly(gradleKotlinDsl())
     testImplementation(gradleTestKit())
-    testImplementation(gradleApi())
-    testImplementation(gradleKotlinDsl())
-    testImplementation(kotlin("test-junit"))
-    testImplementation("org.jetbrains.kotlin:kotlin-gradle-plugin")
+    testImplementation(Deps.junit4)
     testImplementation(Deps.uspek)
 }
 
