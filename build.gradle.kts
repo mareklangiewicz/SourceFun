@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.github.langara.sourcefun"
-version = "0.0.1"
+version = "0.0.02"
 
 gradlePlugin {
     plugins {
