@@ -3,72 +3,78 @@ package pl.mareklangiewicz
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.file.FileTreeElement
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileVisitDetails
+import org.gradle.api.provider.*
 import org.gradle.api.tasks.*
 import org.gradle.kotlin.dsl.register
 import java.io.File
 
-data class Def(
+internal data class SourceFunDefinition(
     val taskName: String,
     val sourceDir: String,
     val outputDir: String,
-    val action: Action<FileTreeElement>
+    val transform: (String) -> String?
 )
 
 open class SourceFunExtension {
 
-    val defs = mutableListOf<Def>()
+    internal val definitions = mutableListOf<SourceFunDefinition>()
 
-    operator fun Def.unaryPlus() = defs.add(this)
+    fun def(taskName: String, sourceDir: String, outputDir: String, transform: (String) -> String?) {
+        definitions.add(SourceFunDefinition(taskName, sourceDir, outputDir, transform))
+    }
 }
 
 class SourceFunPlugin : Plugin<Project> {
-    override fun apply(target: Project) {
+    override fun apply(project: Project) {
 
-        val extension = target.extensions.create("sourceFun", SourceFunExtension::class.java)
+        val extension = project.extensions.create("sourceFun", SourceFunExtension::class.java)
 
-        target.afterEvaluate {// FIXME: is afterEvaluate appropriate here??
-            for (def in extension.defs) target.tasks.register<SourceFunTask>(def.taskName) {
+        project.afterEvaluate {// FIXME: is afterEvaluate appropriate here??
+            for (def in extension.definitions) project.tasks.register<SourceFunTask>(def.taskName) {
                 source(def.sourceDir)
-                outputDir = target.file(def.outputDir)
-                action = { def.action.execute(this) }
+                outputDir.set(project.file(def.outputDir))
+                transform(def.transform)
             }
         }
     }
 }
 
-open class SourceFunTask : SourceTask() {
+abstract class SourceFunTask : SourceTask() {
 
     @get:OutputDirectory
-    var outputDir: File? = null
+    abstract val outputDir: DirectoryProperty
 
-    // action should only write file(s) inside outputDir
-    @Internal
-    var action: FileVisitDetails.() -> Unit = {}
+    @get:Internal
+    internal abstract val visitProperty: Property<Action<FileVisitDetails>>
 
     @TaskAction
-    fun execute() {
-        source.visit {action() } // FIXME: do not use "visit" we want user to write explicit loops
-            // TODO: define own MINIMAL (micro) multiplatform abstractions for files and file trees
+    fun execute() { source.visit(visitProperty.get()) }
+
+    fun visit(action: FileVisitDetails.() -> Unit) {
+        visitProperty.set { action() }
+        visitProperty.finalizeValue()
     }
+
+    fun visitFile(action: (inFile: File, outFile: File) -> Unit) = visit {
+        val dir = outputDir.get()
+        val inFile = file
+        val relPath = path
+        logger.quiet("SourceFunTask: processing $relPath")
+        val outFile = dir.file(relPath).asFile
+        if (isDirectory) outFile.mkdirs() else action(inFile, outFile)
+    }
+
+    fun transformFile(transform: (File) -> String?) {
+        visitFile { inFile, outFile -> transform(inFile)?.let { outFile.writeText(it) } }
+    }
+
+    fun transform(transform: (String) -> String?) = transformFile { transform(it.readText()) }
 }
 
-
-// FIXME: remove - it's a temporary task class for experiments
-open class SourceRegexTask : SourceTask() {
-
-    @get:OutputDirectory
-    var outputDir: File? = null
-
-    @get:Input
-    var match: String? = null
-
-    @get:Input
-    var replace: String? = null
-
-    @TaskAction
-    fun execute() {
-        println("TODO: SourceRegexTask.execute() source:$source; outputDir: $outputDir; match: $match; replace: $replace")
-    }
+abstract class SourceRegexTask : SourceFunTask() {
+    @get:Input abstract val match: Property<String>
+    @get:Input abstract val replace: Property<String>
+    init { transform { it.replace(Regex(match.get()), replace.get()) } }
 }

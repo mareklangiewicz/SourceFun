@@ -138,28 +138,27 @@ private fun onSourceFunPlugin(tempDir: File, settingsFile: File, buildFile: File
                 import pl.mareklangiewicz.SourceFunPlugin
                 import pl.mareklangiewicz.SourceRegexTask
                 import pl.mareklangiewicz.SourceFunTask
-                import pl.mareklangiewicz.Def
                 
                 plugins {
                     id("pl.mareklangiewicz.sourcefun")
                 }
                 
                 sourceFun {
-                    + Def("funTask1", "fun1Src", "funTempOut") { println(file.absolutePath) }
-                    + Def("funTask2", "fun2Src", "funTempOut") { println(file.absolutePath) }
+                    def("funTask1", "fun1Src", "funTempOut") { null }
+                    def("funTask2", "fun2Src", "funTempOut") { null }
                 }
                 
                 tasks.register<SourceFunTask>("funTask3") {
                     source("fun3Src")
-                    outputDir = file("funTempOut")
-                    action = { println(file.absolutePath) }
+                    outputDir.set(file("funTempOut"))
+                    visitFile { inFile, outFile -> println(inFile.absolutePath); println(outFile.absolutePath) }
                 }
                 
                 tasks.register<SourceRegexTask>("regexExperiment") {
                     source("regexTempSrc")
-                    outputDir = file("regexTempOut")
-                    match = ".*"
-                    replace = "XXX"
+                    outputDir.set(file("regexTempOut"))
+                    match.set(".*")
+                    replace.set("XXX")
                     doLast {
                         println("fjkdslj")
                     }
