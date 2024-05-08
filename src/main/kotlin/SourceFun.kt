@@ -1,80 +1,156 @@
-package pl.mareklangiewicz
+@file:Suppress("MemberVisibilityCanBePrivate", "PackageDirectoryMismatch")
 
-import org.gradle.api.Action
-import org.gradle.api.Plugin
-import org.gradle.api.Project
-import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.FileVisitDetails
+package pl.mareklangiewicz.sourcefun
+
+import java.time.*
+import java.time.format.*
+import kotlin.properties.*
+import kotlin.reflect.*
+import kotlinx.coroutines.runBlocking
+import okio.*
+import okio.FileSystem.Companion.SYSTEM
+import okio.Path.Companion.toOkioPath
+import org.gradle.api.*
+import org.gradle.api.file.*
 import org.gradle.api.provider.*
 import org.gradle.api.tasks.*
-import org.gradle.kotlin.dsl.register
-import java.io.File
+import pl.mareklangiewicz.annotations.DelicateApi
+import pl.mareklangiewicz.io.*
+import pl.mareklangiewicz.kommand.*
+import pl.mareklangiewicz.kommand.git.*
 
 internal data class SourceFunDefinition(
-    val taskName: String,
-    val sourceDir: String,
-    val outputDir: String,
-    val transform: (String) -> String?
+  val taskName: String,
+  val sourcePath: Path,
+  val outputPath: Path,
+  val taskGroup: String? = null,
+  val transform: Path.(String) -> String?,
 )
+
+class SourceFunRegistering(val project: Project, val configuration: SourceFunTask.() -> Unit) {
+
+  operator fun provideDelegate(thisObj: SourceFunExtension?, property: KProperty<*>):
+    ReadOnlyProperty<SourceFunExtension?, TaskProvider<SourceFunTask>> {
+    val taskProvider = project.tasks.register(property.name, SourceFunTask::class.java, configuration)
+    return ReadOnlyProperty { _, _ -> taskProvider }
+  }
+}
 
 open class SourceFunExtension {
 
-    internal val definitions = mutableListOf<SourceFunDefinition>()
+  internal val definitions = mutableListOf<SourceFunDefinition>()
 
-    fun def(taskName: String, sourceDir: String, outputDir: String, transform: (String) -> String?) {
-        definitions.add(SourceFunDefinition(taskName, sourceDir, outputDir, transform))
-    }
+  var grp: String? = null
+
+  @Deprecated("Use val taskName by reg { ... }", replaceWith = ReplaceWith("val taskName by reg { ... }"))
+  fun def(taskName: String, sourcePath: Path, outputPath: Path, transform: Path.(String) -> String?) {
+    definitions.add(SourceFunDefinition(taskName, sourcePath, outputPath, grp, transform))
+  }
+
+  fun Project.reg(group: String? = grp, configuration: SourceFunTask.() -> Unit) = SourceFunRegistering(project) {
+    group?.let { this.group = it }
+    configuration()
+  }
 }
 
 class SourceFunPlugin : Plugin<Project> {
-    override fun apply(project: Project) {
+  override fun apply(project: Project) {
 
-        val extension = project.extensions.create("sourceFun", SourceFunExtension::class.java)
+    val extension = project.extensions.create("sourceFun", SourceFunExtension::class.java)
 
-        project.afterEvaluate {// FIXME: is afterEvaluate appropriate here??
-            for (def in extension.definitions) project.tasks.register<SourceFunTask>(def.taskName) {
-                source(def.sourceDir)
-                outputDir.set(project.file(def.outputDir))
-                transform(def.transform)
-            }
-        }
+    project.afterEvaluate {// FIXME: is afterEvaluate appropriate here??
+      for (def in extension.definitions) project.tasks.register(def.taskName, SourceFunTask::class.java) { task ->
+        task.addSource(def.sourcePath)
+        task.setOutput(def.outputPath)
+        task.setTransformFun(def.transform)
+        def.taskGroup?.let { task.group = it }
+      }
     }
+  }
 }
 
 abstract class SourceFunTask : SourceTask() {
 
-    @get:OutputDirectory
-    abstract val outputDir: DirectoryProperty
+  @get:OutputDirectory
+  protected abstract val outputDirProperty: DirectoryProperty
 
-    @get:Internal
-    internal abstract val visitProperty: Property<Action<FileVisitDetails>>
+  @get:Internal
+  protected abstract val taskActionProperty: Property<(source: FileTree, output: Directory) -> Unit>
 
-    @TaskAction
-    fun execute() { source.visit(visitProperty.get()) }
+  fun setOutput(path: Path) = outputDirProperty.set(path.toFile())
 
-    fun visit(action: FileVisitDetails.() -> Unit) {
-        visitProperty.set { action() }
-        visitProperty.finalizeValue()
-    }
+  fun setTaskAction(action: (srcTree: FileTree, outDir: Directory) -> Unit) {
+    taskActionProperty.set(action)
+    taskActionProperty.finalizeValue()
+  }
 
-    fun visitFile(action: (inFile: File, outFile: File) -> Unit) = visit {
-        val dir = outputDir.get()
-        val inFile = file
-        val relPath = path
-        logger.quiet("SourceFunTask: processing $relPath")
-        val outFile = dir.file(relPath).asFile
-        if (isDirectory) outFile.mkdirs() else action(inFile, outFile)
-    }
+  @TaskAction
+  fun taskAction() = taskActionProperty.get()(source, outputDirProperty.get())
+}
 
-    fun transformFile(transform: (File) -> String?) {
-        visitFile { inFile, outFile -> transform(inFile)?.let { outFile.writeText(it) } }
-    }
+fun SourceTask.addSource(path: Path) {
+  source(path.toFile())
+}
 
-    fun transform(transform: (String) -> String?) = transformFile { transform(it.readText()) }
+var SourceFunTask.src: Path
+  get() = error("src is write only")
+  set(value) = setSource(value.toFile())
+
+var SourceFunTask.out: Path
+  get() = error("out is write only")
+  set(value) = setOutput(value)
+
+
+fun SourceFunTask.setVisitFun(action: FileVisitDetails.(outDir: Directory) -> Unit) {
+  setTaskAction { srcTree, outDir -> srcTree.visit { it.action(outDir) } }
+}
+
+fun SourceFunTask.setVisitPathFun(action: (inPath: Path, outPath: Path) -> Unit) {
+  setVisitFun { outDir ->
+    if (isDirectory) return@setVisitFun
+    val inPath = file.toOkioPath()
+    val outPath = outDir.file(path).asFile.toOkioPath()
+    logger.info("src: $inPath") // printing absolute path is good because it's then clickable in the IDE
+    logger.info("out: $outPath")
+    action(inPath, outPath)
+  }
+}
+
+fun SourceFunTask.setTransformPathFun(transform: (Path) -> String?) = setVisitPathFun { inPath, outPath ->
+  transform(inPath)?.let { SYSTEM.writeUtf8(outPath, it, createParentDir = true) }
+}
+
+fun SourceFunTask.setTransformFun(transform: Path.(String) -> String?) {
+  setTransformPathFun { it.transform(SYSTEM.readUtf8(it)) }
 }
 
 abstract class SourceRegexTask : SourceFunTask() {
-    @get:Input abstract val match: Property<String>
-    @get:Input abstract val replace: Property<String>
-    init { transform { it.replace(Regex(match.get()), replace.get()) } }
+  @get:Input
+  abstract val match: Property<String>
+
+  @get:Input
+  abstract val replace: Property<String>
+
+  init {
+    setTransformFun { it.replace(Regex(match.get()), replace.get()) }
+  }
+}
+
+@UntrackedTask(because = "Git version and build time is external state and can't be tracked.")
+abstract class VersionDetailsTask : DefaultTask() {
+
+  @get:OutputDirectory
+  abstract val generatedAssetsDir: DirectoryProperty
+
+  @OptIn(DelicateApi::class)
+  @TaskAction
+  fun execute() = runBlocking {
+    val commit = gitHash().ax().single()
+    val time = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)
+    generatedAssetsDir.dir("version-details").get().run {
+      project.mkdir(this)
+      file("commit").asFile.writeText(commit)
+      file("buildtime").asFile.writeText(time)
+    }
+  }
 }
