@@ -1,13 +1,15 @@
+import org.jetbrains.kotlin.gradle.dsl.*
 import org.jetbrains.kotlin.gradle.plugin.*
 import pl.mareklangiewicz.defaults.*
 import pl.mareklangiewicz.deps.*
 import pl.mareklangiewicz.utils.*
 
 plugins {
-  plug(plugs.KotlinJvm)
+  plugAll(plugs.KotlinMulti)
 }
 
-repositories { defaultRepos() }
+
+defaultBuildTemplateForBasicMppLib()
 
 
 // region [Kotlin Module Build Template]
@@ -196,3 +198,133 @@ fun TaskContainer.withPublishingPrintln() = withType<AbstractPublishToMaven>().c
 }
 
 // endregion [Kotlin Module Build Template]
+
+// region [MPP Module Build Template]
+
+/**
+ * Only for very standard small libs. In most cases it's better to not use this function.
+ *
+ * These ignoreXXX flags are hacky, but needed. see [allDefault] kdoc for details.
+ */
+fun Project.defaultBuildTemplateForBasicMppLib(
+  details: LibDetails = rootExtLibDetails,
+  ignoreCompose: Boolean = false, // so user have to explicitly say THAT he wants to ignore compose settings here.
+  ignoreAndroTarget: Boolean = false, // so user have to explicitly say IF he wants to ignore it.
+  ignoreAndroConfig: Boolean = false, // so user have to explicitly say THAT he wants to ignore it.
+  ignoreAndroPublish: Boolean = false, // so user have to explicitly say THAT he wants to ignore it.
+  addCommonMainDependencies: KotlinDependencyHandler.() -> Unit = {},
+) {
+  require(ignoreCompose || details.settings.compose == null) { "defaultBuildTemplateForBasicMppLib can not configure compose stuff" }
+  details.settings.andro?.let {
+    require(ignoreAndroConfig) { "defaultBuildTemplateForBasicMppLib can not configure android stuff (besides just adding target)" }
+    require(ignoreAndroPublish || it.publishNoVariants) { "defaultBuildTemplateForBasicMppLib can not publish android stuff YET" }
+  }
+  repositories { addRepos(details.settings.repos) }
+  defaultGroupAndVerAndDescription(details)
+  extensions.configure<KotlinMultiplatformExtension> {
+    allDefault(
+      settings = details.settings,
+      ignoreCompose = ignoreCompose,
+      ignoreAndroTarget = ignoreAndroTarget,
+      ignoreAndroConfig = ignoreAndroConfig,
+      ignoreAndroPublish = ignoreAndroPublish,
+      addCommonMainDependencies = addCommonMainDependencies,
+    )
+  }
+  configurations.checkVerSync()
+  tasks.defaultKotlinCompileOptions(details.settings.withJvmVer)
+  tasks.defaultTestsOptions(onJvmUseJUnitPlatform = details.settings.withTestJUnit5)
+  if (plugins.hasPlugin("maven-publish")) {
+    defaultPublishing(details)
+    if (plugins.hasPlugin("signing")) defaultSigning()
+    else println("MPP Module ${name}: signing disabled")
+  } else println("MPP Module ${name}: publishing (and signing) disabled")
+}
+
+/**
+ * Only for very standard small libs. In most cases it's better to not use this function.
+ *
+ * These ignoreXXX flags are hacky, but needed because we want to inject this code also to such build files,
+ * where plugins for compose and/or android are not applied at all, so compose/android stuff should be explicitly ignored,
+ * and then configured right after this call, using code from another special region (region using compose and/or andro plugin stuff).
+ * Also kmp andro publishing is in the middle of big changes, so let's not support it yet, and let's wait for more clarity regarding:
+ * https://youtrack.jetbrains.com/issue/KT-61575/Publishing-a-KMP-library-handles-Android-target-inconsistently-requiring-an-explicit-publishLibraryVariants-call-to-publish
+ * https://youtrack.jetbrains.com/issue/KT-60623/Deprecate-publishAllLibraryVariants-in-kotlin-android
+ */
+fun KotlinMultiplatformExtension.allDefault(
+  settings: LibSettings,
+  ignoreCompose: Boolean = false, // so user have to explicitly say THAT he wants to ignore compose settings here.
+  ignoreAndroTarget: Boolean = false, // so user have to explicitly say IF he wants to ignore it.
+  ignoreAndroConfig: Boolean = false, // so user have to explicitly say THAT he wants to ignore it.
+  ignoreAndroPublish: Boolean = false, // so user have to explicitly say THAT he wants to ignore it.
+  addCommonMainDependencies: KotlinDependencyHandler.() -> Unit = {},
+) = with(settings) {
+  require(ignoreCompose || compose == null) { "allDefault can not configure compose stuff" }
+  andro?.let {
+    require(ignoreAndroConfig) { "allDefault can not configure android stuff (besides just adding target)" }
+    require(ignoreAndroPublish || it.publishNoVariants) { "allDefault can not publish android stuff YET" }
+  }
+  if (withJvm) jvm()
+  if (withJs) jsDefault()
+  if (withNativeLinux64) linuxX64()
+  if (withAndro && !ignoreAndroTarget) androidTarget {
+    // TODO_someday some kmp andro publishing. See kdoc above why not yet.
+  }
+  sourceSets {
+    val commonMain by getting {
+      dependencies {
+        if (withKotlinxHtml) implementation(KotlinX.html)
+        addCommonMainDependencies()
+      }
+    }
+    val commonTest by getting {
+      dependencies {
+        implementation(kotlin("test"))
+        if (withTestUSpekX) implementation(Langiewicz.uspekx)
+      }
+    }
+    if (withJvm) {
+      val jvmTest by getting {
+        dependencies {
+          if (withTestJUnit4) implementation(JUnit.junit)
+          if (withTestJUnit5) implementation(Org.JUnit.Jupiter.junit_jupiter_engine)
+          if (withTestUSpekX) {
+            implementation(Langiewicz.uspekx)
+            if (withTestJUnit4) implementation(Langiewicz.uspekx_junit4)
+            if (withTestJUnit5) implementation(Langiewicz.uspekx_junit5)
+          }
+          if (withTestGoogleTruth) implementation(Com.Google.Truth.truth)
+          if (withTestMockitoKotlin) implementation(Org.Mockito.Kotlin.mockito_kotlin)
+        }
+      }
+    }
+    if (withNativeLinux64) {
+      val linuxX64Main by getting
+      val linuxX64Test by getting
+    }
+  }
+}
+
+
+fun KotlinMultiplatformExtension.jsDefault(
+  withBrowser: Boolean = true,
+  withNode: Boolean = false,
+  testWithChrome: Boolean = true,
+  testHeadless: Boolean = true,
+) {
+  js(IR) {
+    if (withBrowser) browser {
+      testTask {
+        useKarma {
+          when (testWithChrome to testHeadless) {
+            true to true -> useChromeHeadless()
+            true to false -> useChrome()
+          }
+        }
+      }
+    }
+    if (withNode) nodejs()
+  }
+}
+
+// endregion [MPP Module Build Template]
