@@ -74,7 +74,7 @@ fun transformSpecialExtensionsContent(content: String): String {
     +ureBeforeGenerated.withName("before")
     +ureRegionGenerated // no need for name because we will replace it
   }
-  val matchResult = ureSpecialExtensionsKt.compile().matchEntire(content)!!
+  val matchResult = ureSpecialExtensionsKt.matchEntireOrThrow(content)
   val before by matchResult
   val template by matchResult
   val generated = listOf("Short", "Int", "Long", "Float", "Double", "Boolean", "Char")
