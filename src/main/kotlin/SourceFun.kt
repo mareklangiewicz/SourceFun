@@ -19,6 +19,7 @@ import pl.mareklangiewicz.io.*
 import pl.mareklangiewicz.kommand.*
 import pl.mareklangiewicz.kommand.git.*
 
+@Deprecated("Use SourceFunRegistering (via sourceFun { val taskName by reg {...} })")
 internal data class SourceFunDefinition(
   val taskName: String,
   val sourcePath: Path,
@@ -58,6 +59,7 @@ class SourceFunPlugin : Plugin<Project> {
 
     val extension = project.extensions.create("sourceFun", SourceFunExtension::class.java)
 
+    // this is only needed for deprecated definitions list. so it will be removed sooner or later
     project.afterEvaluate {// FIXME: is afterEvaluate appropriate here??
       for (def in extension.definitions) project.tasks.register(def.taskName, SourceFunTask::class.java) { task ->
         task.addSource(def.sourcePath)
