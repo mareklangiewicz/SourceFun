@@ -21,7 +21,7 @@ class SLF4JULog(
     val line = toLogLine(level, data)
     when (level) {
       NONE -> Unit
-      QUIET, VERBOSE -> logger.trace(line)
+      BABBLE, VERBOSE -> logger.trace(line)
       DEBUG -> logger.debug(line)
       INFO -> logger.info(line)
       WARN -> logger.warn(line)

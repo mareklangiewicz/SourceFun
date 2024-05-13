@@ -11,8 +11,8 @@ plugins {
 }
 
 val usVer = "0.0.33" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/uspek/
-val kgVer = "0.0.52" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kground/
-val klVer = "0.0.59" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kommandline/
+val kgVer = "0.0.53" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kground/
+val klVer = "0.0.60" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kommandline/
 
 repositories {
   mavenLocal()
@@ -60,7 +60,7 @@ defaultGroupAndVerAndDescription(
     group = "pl.mareklangiewicz.deps", // important non default ...deps group (as accepted on gradle portal)
     description = "Maintain typical java/kotlin/android projects sources with fun.",
     githubUrl = "https://github.com/mareklangiewicz/SourceFun",
-    version = Ver(0, 4, 5),
+    version = Ver(0, 4, 6),
     // https://plugins.gradle.org/search?term=pl.mareklangiewicz
     settings = LibSettings(
       withJs = false,
