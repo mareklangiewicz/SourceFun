@@ -18,6 +18,8 @@ import pl.mareklangiewicz.annotations.DelicateApi
 import pl.mareklangiewicz.io.*
 import pl.mareklangiewicz.kommand.*
 import pl.mareklangiewicz.kommand.git.*
+import pl.mareklangiewicz.ure.core.Ure
+import pl.mareklangiewicz.ure.replaceAll
 
 @Deprecated("Use SourceFunRegistering (via sourceFun { val taskName by reg {...} })")
 internal data class SourceFunDefinition(
@@ -135,6 +137,18 @@ abstract class SourceRegexTask : SourceFunTask() {
 
   init {
     setTransformFun { it.replace(Regex(match.get()), replace.get()) }
+  }
+}
+
+abstract class SourceUreTask : SourceFunTask() {
+  @get:Input
+  abstract val match: Property<Ure>
+
+  @get:Input
+  abstract val replace: Property<String>
+
+  init {
+    setTransformFun { it.replaceAll(match.get(), replace.get()) }
   }
 }
 
