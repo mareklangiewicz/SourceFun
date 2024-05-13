@@ -16,7 +16,9 @@ import org.gradle.api.provider.*
 import org.gradle.api.tasks.*
 import pl.mareklangiewicz.annotations.DelicateApi
 import pl.mareklangiewicz.io.*
+import pl.mareklangiewicz.kground.io.*
 import pl.mareklangiewicz.kground.logEach
+import pl.mareklangiewicz.kgroundx.maintenance.injectSpecialRegion
 import pl.mareklangiewicz.kommand.*
 import pl.mareklangiewicz.kommand.git.*
 import pl.mareklangiewicz.ulog.*
@@ -111,6 +113,7 @@ fun SourceFunTask.setVisitFun(action: FileVisitDetails.(outDir: Directory) -> Un
   setTaskAction { srcTree, outDir -> srcTree.visit { it.action(outDir) } }
 }
 
+/** Note: this version uses the same file relative path/name for both input and output */
 fun SourceFunTask.setVisitPathFun(action: (inPath: Path, outPath: Path) -> Unit) {
   setVisitFun { outDir ->
     if (isDirectory) return@setVisitFun
@@ -189,5 +192,18 @@ suspend fun download(url: String, to: Path) {
       false
     } else true
   }
+}
+
+
+@DelicateApi("FIXME: remove this temporary copy and use new kgroundx-maintenance implementation")
+suspend fun Path.injectSpecialRegionContentFromFile(
+  regionLabel: String,
+  regionContentFile: Path,
+  addIfNotFound: Boolean = true,
+  regionContentMap: suspend (String) -> String = { "// region [$regionLabel]\n\n$it\n// endregion [$regionLabel]\n" },
+) {
+  val regionContent = implictx<UFileSys>().readUtf8(regionContentFile)
+  val region = regionContentMap(regionContent)
+  injectSpecialRegion(regionLabel, region, addIfNotFound)
 }
 
