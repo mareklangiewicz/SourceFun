@@ -5,8 +5,13 @@ import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CoroutineDispatcher
 import pl.mareklangiewicz.ulog.ULog
 import kotlinx.coroutines.*
+import org.gradle.api.DefaultTask
 import org.gradle.api.Task
-import pl.mareklangiewicz.annotations.NotPortableApi
+import org.gradle.api.file.*
+import org.gradle.api.provider.*
+import org.gradle.api.tasks.*
+import okio.Path.Companion.toOkioPath
+import pl.mareklangiewicz.annotations.*
 import pl.mareklangiewicz.gradle.ulog.asULog
 import pl.mareklangiewicz.kground.io.*
 import pl.mareklangiewicz.kground.plusIfNN
@@ -38,3 +43,21 @@ suspend inline fun <T: Task, R> T.uctxForTask(
   name = coroutineName,
   block = block,
 )
+
+
+@UntrackedTask(because = "Downloaded file is external state and can't be tracked.")
+abstract class DownloadFile : DefaultTask() { // TODO_later: nice task for downloading multiple files.
+
+  @get:Input
+  abstract val inputUrl: Property<String>
+
+  @get:OutputFile
+  abstract val outputFile: RegularFileProperty
+
+  @OptIn(DelicateApi::class)
+  @TaskAction
+  fun execute() = runWithUCtxForTask {
+    download(inputUrl.get(), outputFile.get().asFile.toOkioPath())
+  }
+}
+
