@@ -16,8 +16,10 @@ import org.gradle.api.provider.*
 import org.gradle.api.tasks.*
 import pl.mareklangiewicz.annotations.DelicateApi
 import pl.mareklangiewicz.io.*
+import pl.mareklangiewicz.kground.logEach
 import pl.mareklangiewicz.kommand.*
 import pl.mareklangiewicz.kommand.git.*
+import pl.mareklangiewicz.ulog.*
 import pl.mareklangiewicz.ure.core.Ure
 import pl.mareklangiewicz.ure.replaceAll
 
@@ -170,3 +172,22 @@ abstract class VersionDetailsTask : DefaultTask() {
     }
   }
 }
+
+// TODO: Temporarily copied impl from kgroundx-maintenance; implement sth solid in kommandline instead.
+@DelicateApi("TODO: implement some public versatile version of downloading in kommandline instead.")
+suspend fun download(url: String, to: Path) {
+  val cli = implictx<CLI>()
+  val log = implictx<ULog>()
+  // TODO: Add curl to KommandLine library, then use it here
+  // -s so no progress bars on error stream; -S to report actual errors on error stream
+  val k = kommand("curl", "-s", "-S", "-o", to.toString(), url)
+  val result = cli.start(k).waitForResult()
+  result.unwrap { err ->
+    if (err.isNotEmpty()) {
+      log.e("FAIL: Error stream was not empty:")
+      err.logEach(log, ULogLevel.ERROR)
+      false
+    } else true
+  }
+}
+
