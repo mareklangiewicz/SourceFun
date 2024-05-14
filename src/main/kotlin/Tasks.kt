@@ -27,6 +27,7 @@ import pl.mareklangiewicz.kommand.core.curlDownload
 import pl.mareklangiewicz.kommand.getSysCLI
 import pl.mareklangiewicz.kommand.git.gitHash
 import pl.mareklangiewicz.uctx.uctx
+import pl.mareklangiewicz.ure.UReplacement
 import pl.mareklangiewicz.ure.core.Ure
 import pl.mareklangiewicz.ure.replaceAll
 import pl.mareklangiewicz.usubmit.USubmit
@@ -133,7 +134,7 @@ abstract class SourceUreTask : SourceFunTask() {
   abstract val match: Property<Ure>
 
   @get:Input
-  abstract val replace: Property<String>
+  abstract val replace: Property<UReplacement>
 
   init {
     setTransformFun { it.replaceAll(match.get(), replace.get()) }
