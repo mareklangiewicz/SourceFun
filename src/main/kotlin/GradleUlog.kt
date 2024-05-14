@@ -11,9 +11,15 @@ import pl.mareklangiewicz.ulog.ULogLevel.*
 
 private fun defaultLogLine(level: ULogLevel, data: Any?) = "L ${level.symbol} ${data.str(maxLength = 256)}"
 
+/**
+ * Note1: gradle logger is also inheriting from org.slf4j.Logger
+ * Note2: alsoPrintLn = true is convenient in gradle case, as gradle will log println calls in special "quiet" mode,
+ * so it's always logged/displayed (unless level < minLevel in which case we don't even println)
+ */
 class SLF4JULog(
   val logger: org.slf4j.Logger,
-  var minLevel: ULogLevel = VERBOSE,
+  var minLevel: ULogLevel = INFO,
+  val alsoPrintLn: Boolean = false,
   val toLogLine: (ULogLevel, Any?) -> String = ::defaultLogLine,
 ): ULog {
   override fun invoke(level: ULogLevel, data: Any?) {
@@ -27,31 +33,37 @@ class SLF4JULog(
       WARN -> logger.warn(line)
       ERROR, ASSERT -> logger.error(line)
     }
+    if (alsoPrintLn) println(line)
   }
 }
 
 fun org.slf4j.Logger.asULog(
-  minLevel: ULogLevel = VERBOSE,
+  minLevel: ULogLevel = INFO,
+  alsoPrintLn: Boolean = false,
   toLogLine: (ULogLevel, Any?) -> String = ::defaultLogLine,
-) = SLF4JULog(this, minLevel, toLogLine)
+) = SLF4JULog(this, minLevel, alsoPrintLn, toLogLine)
 
 fun Project.getULogForProject(
-  minLevel: ULogLevel = VERBOSE,
+  minLevel: ULogLevel = INFO,
+  alsoPrintLn: Boolean = false,
   toLogLine: (ULogLevel, Any?) -> String = ::defaultLogLine,
-) = logger.asULog(minLevel, toLogLine)
+) = logger.asULog(minLevel, alsoPrintLn, toLogLine)
 
 fun Task.getULogForTask(
-  minLevel: ULogLevel = VERBOSE,
+  minLevel: ULogLevel = INFO,
+  alsoPrintLn: Boolean = false,
   toLogLine: (ULogLevel, Any?) -> String = ::defaultLogLine,
-) = logger.asULog(minLevel, toLogLine)
+) = logger.asULog(minLevel, alsoPrintLn, toLogLine)
 
 fun Script.getULogForScript(
-  minLevel: ULogLevel = VERBOSE,
+  minLevel: ULogLevel = INFO,
+  alsoPrintLn: Boolean = false,
   toLogLine: (ULogLevel, Any?) -> String = ::defaultLogLine,
-) = logger.asULog(minLevel, toLogLine)
+) = logger.asULog(minLevel, alsoPrintLn, toLogLine)
 
 fun getSLF4JULog(
   loggerName: String,
-  minLevel: ULogLevel = VERBOSE,
+  minLevel: ULogLevel = INFO,
+  alsoPrintLn: Boolean = false,
   toLogLine: (ULogLevel, Any?) -> String = ::defaultLogLine,
-) = LoggerFactory.getLogger(loggerName).asULog(minLevel, toLogLine)
+) = LoggerFactory.getLogger(loggerName).asULog(minLevel, alsoPrintLn, toLogLine)

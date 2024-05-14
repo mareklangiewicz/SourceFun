@@ -46,7 +46,7 @@ suspend inline fun <T: Task, R> T.uctxForTask(
   fs: UFileSys? = getSysUFileSys(),
   cwd: UCWD? = fs?.getSysWorkingDir()?.let(::UCWD),
   cli: CLI? = getSysCLI(),
-  log: ULog? = logger.asULog(),
+  log: ULog? = logger.asULog(alsoPrintLn = true),
   submit: USubmit? = null,
   // TODO_someday_maybe: some awesome configurable default (TUI?) Supervisor/USubmit for gradle?
   // BTW ZenitySupervisor as default USubmit in gradle is bad idea. It has to work on different systems/CIs.
