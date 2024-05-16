@@ -138,7 +138,10 @@ private fun onSampleSourceFunProject() {
 
         "task ends with SUCCESS" o { result.task(":fakeReportStuff1JustPrintLn")?.outcome chkEq SUCCESS }
 
-        // TODO: check printed output a bit
+        "visited files are printed" o {
+          chk("GenericExtensions.kt" in result.output)
+          chk("SpecialExtensions.kt" in result.output)
+        }
       }
 
       "On task fakeReportStuff2UreArrayToXXX" o {
