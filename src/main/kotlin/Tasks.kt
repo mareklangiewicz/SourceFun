@@ -4,17 +4,17 @@ import java.time.*
 import java.time.format.DateTimeFormatter
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
-import kotlinx.coroutines.CoroutineDispatcher
-import pl.mareklangiewicz.ulog.ULog
+import kotlin.text.Regex
 import kotlinx.coroutines.*
-import okio.Path
+import kotlinx.coroutines.CoroutineDispatcher
 import okio.FileSystem.Companion.SYSTEM
+import okio.Path
+import okio.Path.Companion.toOkioPath
 import org.gradle.api.DefaultTask
 import org.gradle.api.Task
 import org.gradle.api.file.*
 import org.gradle.api.provider.*
 import org.gradle.api.tasks.*
-import okio.Path.Companion.toOkioPath
 import pl.mareklangiewicz.annotations.*
 import pl.mareklangiewicz.gradle.ulog.asULog
 import pl.mareklangiewicz.io.readUtf8
@@ -27,6 +27,7 @@ import pl.mareklangiewicz.kommand.core.curlDownload
 import pl.mareklangiewicz.kommand.getSysCLI
 import pl.mareklangiewicz.kommand.git.gitHash
 import pl.mareklangiewicz.uctx.uctx
+import pl.mareklangiewicz.ulog.ULog
 import pl.mareklangiewicz.ure.UReplacement
 import pl.mareklangiewicz.ure.core.Ure
 import pl.mareklangiewicz.ure.replaceAll
@@ -58,6 +59,7 @@ suspend inline fun <T: Task, R> T.uctxForTask(
   block = block,
 )
 
+@UntrackedTask(because = "The taskAction property can not be serializable.")
 abstract class SourceFunTask : SourceTask() {
 
   @get:OutputDirectory
@@ -95,61 +97,67 @@ fun SourceFunTask.setVisitFun(action: FileVisitDetails.(outDir: Directory) -> Un
 }
 
 /** Note: this version uses the same file relative path/name for both input and output */
-fun SourceFunTask.setVisitPathFun(action: (inPath: Path, outPath: Path) -> Unit) {
+fun SourceFunTask.setVisitPathFun(action: Pair<Path, Path>.() -> Unit) {
   setVisitFun { outDir ->
     if (isDirectory) return@setVisitFun
     val inPath = file.toOkioPath()
     val outPath = outDir.file(path).asFile.toOkioPath()
-    logger.info("src: $inPath") // printing absolute path is good because it's then clickable in the IDE
-    logger.info("out: $outPath")
-    action(inPath, outPath)
+    (inPath to outPath).action()
   }
 }
 
-fun SourceFunTask.setTransformPathFun(transform: (Path) -> String?) = setVisitPathFun { inPath, outPath ->
-  transform(inPath)?.let { SYSTEM.writeUtf8(outPath, it, createParentDir = true) }
+/** Note: this version writes returned string into out (second) path. */
+fun SourceFunTask.setTransformPathFun(transform: Pair<Path, Path>.() -> String?) = setVisitPathFun {
+  transform()?.let { SYSTEM.writeUtf8(second, it, createParentDir = true) }
 }
 
-fun SourceFunTask.setTransformFun(transform: Path.(String) -> String?) {
-  setTransformPathFun { it.transform(SYSTEM.readUtf8(it)) }
+/** Note: this version reads in (first) path into "it" and writes returned string into out (second) path. */
+fun SourceFunTask.setTransformFun(transform: Pair<Path, Path>.(String) -> String?) {
+  setTransformPathFun { transform(SYSTEM.readUtf8(first)) }
 }
 
 
-
+@UntrackedTask(because = "The taskAction property can not be serializable. Regex probably is not serializable as well.")
 abstract class SourceRegexTask : SourceFunTask() {
-  @get:Input
-  abstract val match: Property<String>
-
-  @get:Input
-  abstract val replace: Property<String>
-
+  @get:Input abstract val match: Property<Regex>
+  @get:Input abstract val replace: Property<String>
+  @get:Input abstract val alsoPrintLnStuff: Property<Boolean>
   init {
-    setTransformFun { it.replace(Regex(match.get()), replace.get()) }
+    alsoPrintLnStuff.convention(false)
+    setTransformFun {
+      if (alsoPrintLnStuff.get()) {
+        println("SRegT <- ${this.first}:1") // logging path with :1 is nice because it's then clickable in the IDE
+        println("SRegT -> ${this.second}:1") // logging path with :1 is nice because it's then clickable in the IDE
+        println("SRegT <> match:${match.get()} replace:${replace.get()}")
+      }
+      it.replace(match.get(), replace.get())
+    }
   }
 }
 
-
+@UntrackedTask(because = "The taskAction property can not be serializable, Ure and UReplacement are not serializable.")
 abstract class SourceUreTask : SourceFunTask() {
-  @get:Input
-  abstract val match: Property<Ure>
-
-  @get:Input
-  abstract val replace: Property<UReplacement>
-
+  @get:Input abstract val match: Property<Ure>
+  @get:Input abstract val replace: Property<UReplacement>
+  @get:Input abstract val alsoPrintLnStuff: Property<Boolean>
   init {
-    setTransformFun { it.replaceAll(match.get(), replace.get()) }
+    alsoPrintLnStuff.convention(false)
+    setTransformFun {
+      if (alsoPrintLnStuff.get()) {
+        println("SUreT <- ${this.first}:1") // logging path with :1 is nice because it's then clickable in the IDE
+        println("SUreT -> ${this.second}:1") // logging path with :1 is nice because it's then clickable in the IDE
+        println("SUreT <> match:${match.get().compile()} replace:${replace.get().raw}")
+      }
+      it.replaceAll(match.get(), replace.get())
+    }
   }
 }
 
 @UntrackedTask(because = "Git version and build time is external state and can't be tracked.")
 abstract class VersionDetailsTask : DefaultTask() {
-
-  @get:OutputDirectory
-  abstract val generatedAssetsDir: DirectoryProperty
-
+  @get:OutputDirectory abstract val generatedAssetsDir: DirectoryProperty
   @OptIn(DelicateApi::class)
-  @TaskAction
-  fun execute() = runBlocking {
+  @TaskAction fun execute() = runBlocking {
     val commit = gitHash().ax().single()
     val time = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)
     generatedAssetsDir.dir("version-details").get().run {
@@ -162,18 +170,10 @@ abstract class VersionDetailsTask : DefaultTask() {
 
 @UntrackedTask(because = "Downloaded file is external state and can't be tracked.")
 abstract class DownloadFileTask : DefaultTask() { // TODO_later: nice task for downloading multiple files.
-
-  @get:Input
-  abstract val inputUrl: Property<String>
-
-  @get:OutputFile
-  abstract val outputFile: RegularFileProperty
-
+  @get:Input abstract val inputUrl: Property<String>
+  @get:OutputFile abstract val outputFile: RegularFileProperty
   @OptIn(DelicateApi::class)
-  @TaskAction
-  fun execute() = runWithUCtxForTask {
-    curlDownload(inputUrl.get(), outputFile.get().asFile.toOkioPath())
-  }
+  @TaskAction fun execute() = runWithUCtxForTask { curlDownload(inputUrl.get(), outputFile.get().asFile.toOkioPath()) }
 }
 
 

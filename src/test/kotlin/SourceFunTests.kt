@@ -7,11 +7,10 @@ import org.gradle.testfixtures.*
 import org.gradle.testkit.runner.*
 import org.gradle.testkit.runner.TaskOutcome.*
 import org.junit.jupiter.api.*
-import pl.mareklangiewicz.bad.chkEq
+import pl.mareklangiewicz.bad.*
 import pl.mareklangiewicz.io.*
 import pl.mareklangiewicz.uspek.*
 
-@Disabled // FIXME LATER
 class SourceFunTests {
 
   @TestFactory
@@ -33,7 +32,7 @@ private fun onExampleWithProjectBuilder() {
 
 @Suppress("SameParameterValue")
 private fun withTempProject(settingsKtsContent: String, buildKtsContent: String, code: (tempDir: Path) -> Unit) =
-  SYSTEM.withTempDir("sourceFunTest") { tempDir ->
+  SYSTEM.withTempDir(tempDirPrefix = "sourceFunTest") { tempDir ->
     writeUtf8(tempDir / "settings.gradle.kts", settingsKtsContent)
     writeUtf8(tempDir / "build.gradle.kts", buildKtsContent)
     code(tempDir)
@@ -44,19 +43,19 @@ private fun onSingleHelloWorldProject() {
     val settingsKtsContent = """rootProject.name = "hello-world""""
     val buildKtsContent =
       """
-                tasks.register("helloWorld") {
-                    doLast {
-                        println("Hello world!")
-                    }
-                }
+      tasks.register("helloWorld") {
+        doLast {
+          println("Hello world!")
+        }
+      }
 
-                tasks.register("helloFail") {
-                    doLast {
-                        println("The exception is coming!")
-                        throw RuntimeException("helloFail exception")
-                    }
-                }
-            """.trimIndent()
+      tasks.register("helloFail") {
+        doLast {
+          println("The exception is coming!")
+          throw RuntimeException("helloFail exception")
+        }
+      }
+      """.trimIndent()
 
 
     withTempProject(settingsKtsContent, buildKtsContent) { tempDir ->
@@ -97,7 +96,7 @@ private fun onSingleHelloWorldProject() {
 }
 
 // FIXME: do not hardcode my local paths
-private val sampleSourceFunProjectPath = "/home/marek/code/kotlin/DepsKt/sample-sourcefun".toPath()
+private val sampleSourceFunProjectPath = "/home/marek/code/kotlin/SourceFun/sample-sourcefun".toPath()
 
 private fun onSampleSourceFunProject() {
   "On sample-sourcefun project" o {
@@ -112,7 +111,7 @@ private fun onSampleSourceFunProject() {
       "All awesome tasks printed" o {
         val lines = result.output.lines()
         val idx = lines.indexOf("Awesome tasks")
-        check(idx > 0)
+        chk(idx > 0)
         lines[idx + 2] chkEq "processExtensions1"
         lines[idx + 3] chkEq "processExtensions2deprecated"
         lines[idx + 4] chkEq "reportStuff1"
@@ -121,8 +120,8 @@ private fun onSampleSourceFunProject() {
     }
 
     "On clean gradle cache and build dir programmatically" o {
-      SYSTEM.deleteRecursively(sampleSourceFunProjectPath / ".gradle")
-      SYSTEM.deleteRecursively(sampleSourceFunProjectPath / "build")
+      SYSTEM.deleteTreeWithDoubleChk(sampleSourceFunProjectPath / ".gradle", mustExist = false) { "sourcefun" in it }
+      SYSTEM.deleteTreeWithDoubleChk(sampleSourceFunProjectPath / "build", mustExist = false) { "sourcefun" in it }
 
       "On task processExtensions1" o {
         runner.withArguments("processExtensions1")
@@ -130,7 +129,7 @@ private fun onSampleSourceFunProject() {
 
         "task processExtensions1 ends with SUCCESS" o { result.task(":processExtensions1")?.outcome chkEq SUCCESS }
 
-        // TODO_later: mess with generated source code and check if processExtensions1 fixes it.
+        // TODO: mess with generated source code and check if processExtensions1 fixes it.
       }
 
       "On task reportStuff1" o {
@@ -165,3 +164,23 @@ private fun onSampleSourceFunProject() {
 }
 
 private fun GradleRunner.withProjectPath(path: Path) = withProjectDir(path.toFile())
+
+// FIXME: use impl from kground-io after update kground
+// Note: it should pop up as better alternative to okio deleteRecursively in autocompletion.
+// I think it's good idea to always double-check some specific part of rootPath
+// to make sure we're not accidentally deleting totally wrong dir tree.
+fun FileSystem.deleteTreeWithDoubleChk(
+  rootPath: Path,
+  mustExist: Boolean = true,
+  mustBeDir: Boolean = true,
+  doubleChk: (rootPathString: String) -> Boolean, // mandatory on purpose
+) {
+  val rootPathString = rootPath.toString()
+  val md = metadataOrNull(rootPath) ?: run {
+    mustExist.chkFalse { "Tree rootPath: $rootPathString does NOT exist."}
+    return // So it doesn't exist and it's fine; nothing to delete.
+  }
+  chk(!mustBeDir || md.isDirectory) { "Tree rootPath: $rootPathString is NOT directory." }
+  doubleChk(rootPathString).chkTrue { "Can NOT remove $rootPathString tree because doubleChk failed." }
+  deleteRecursively(rootPath, mustExist)
+}

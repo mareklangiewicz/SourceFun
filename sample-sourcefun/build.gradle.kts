@@ -2,13 +2,22 @@ import pl.mareklangiewicz.sourcefun.*
 import pl.mareklangiewicz.ure.*
 import pl.mareklangiewicz.annotations.*
 import pl.mareklangiewicz.defaults.*
+import pl.mareklangiewicz.ure.*
+import pl.mareklangiewicz.ure.UReplacement.Companion.Literal
 import pl.mareklangiewicz.deps.*
 import pl.mareklangiewicz.utils.*
 
 plugins {
   plug(plugs.NexusPublish) // not really used in this sample, but needed for [Root Build Template] to compile
   plug(plugs.KotlinMulti) apply false
-  id("pl.mareklangiewicz.sourcefun") version "0.4.01"
+  id("pl.mareklangiewicz.sourcefun") version "0.4.07"
+}
+
+buildscript {
+  dependencies {
+    classpath("pl.mareklangiewicz:kommandline:0.0.60")
+    classpath("pl.mareklangiewicz:kgroundx-maintenance:0.0.54")
+  }
 }
 
 defaultBuildTemplateForRootProject(
@@ -43,19 +52,24 @@ sourceFun {
   }
 }
 
-tasks.register<SourceFunTask>("reportStuff1") {
+tasks.register<SourceFunTask>("fakeReportStuff1JustPrintLn") {
   group = "awesome"
   src = extensionsPath
   out = reportsPath
-  setVisitPathFun { inPath, outPath -> println(inPath); println(outPath) }
+  setVisitPathFun {
+    println("FRS1 Faking report (will NOT create any files in $reportsPath)")
+    println("FRS1 <- $first:1") // :1 is for IDE to make it clickable
+    println("FRS1 -> $second:1") // no file will be there, unless other task created it
+  }
 }
 
-tasks.register<SourceRegexTask>("reportStuff2") {
+tasks.register<SourceUreTask>("fakeReportStuff2UreArrayToXXX") {
   group = "awesome"
   src = extensionsPath
   out = reportsPath
-  match.set("Ar*ay")
-  replace.set("XXX")
+  val ure = ure { +ch('A'); 0..MAX of ch('r'); +ureText("ay") }
+  match put ure
+  replace put Literal("XXX")
 }
 
 

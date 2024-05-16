@@ -14,7 +14,7 @@ internal data class SourceFunDefinition(
   val sourcePath: Path,
   val outputPath: Path,
   val taskGroup: String? = null,
-  val transform: Path.(String) -> String?,
+  val transform: Pair<Path, Path>.(String) -> String?,
 )
 
 class SourceFunRegistering(val project: Project, val configuration: SourceFunTask.() -> Unit) {
@@ -33,7 +33,7 @@ open class SourceFunExtension {
   var grp: String? = null
 
   @Deprecated("Use val taskName by reg { ... }", replaceWith = ReplaceWith("val taskName by reg { ... }"))
-  fun def(taskName: String, sourcePath: Path, outputPath: Path, transform: Path.(String) -> String?) {
+  fun def(taskName: String, sourcePath: Path, outputPath: Path, transform: Pair<Path, Path>.(String) -> String?) {
     definitions.add(SourceFunDefinition(taskName, sourcePath, outputPath, grp, transform))
   }
 
