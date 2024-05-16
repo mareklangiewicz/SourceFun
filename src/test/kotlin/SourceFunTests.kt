@@ -102,6 +102,9 @@ private val sampleSourceFunProjectPath = theSourceFunProjectPath / "sample-sourc
 private fun onSampleSourceFunProject() {
   "On sample-sourcefun project" o {
 
+    // Note: the sample-sourcefun project settings.gradle.kts -> pluginManagement -> includeBuild("..")
+    // So it's composite-build that include THIS (SourceFun) project back! (sort of circular "dependency"?)
+    // But I guess GradleRunner/GradleTestKit separates managed builds enough, so it's working fine.
     val runner = GradleRunner.create().withProjectPath(sampleSourceFunProjectPath)
     //.withPluginClasspath() // it's automatically added by java-gradle-plugin
 
