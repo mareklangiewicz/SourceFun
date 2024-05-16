@@ -40,13 +40,13 @@ val reportsPath get() = buildPath / "awesome-reports"
 
 sourceFun {
   grp = "awesome"
-  val processExtensions1 by reg {
+  val processExtensions1ByReg by reg {
     // doNotTrackState("debugging")
     src = extensionsPath / "SpecialExtensions.kt"
     out = extensionsPath
     setTransformFun { transformSpecialExtensionsContent(it) }
   }
-  def("processExtensions2deprecated", extensionsPath, extensionsPath) {
+  def("processExtensions2WithDefDeprecated", extensionsPath, extensionsPath) {
     if (name != "SpecialExtensions.kt") return@def null
     transformSpecialExtensionsContent(it)
   }

@@ -112,10 +112,10 @@ private fun onSampleSourceFunProject() {
         val lines = result.output.lines()
         val idx = lines.indexOf("Awesome tasks")
         chk(idx > 0)
-        lines[idx + 2] chkEq "processExtensions1"
-        lines[idx + 3] chkEq "processExtensions2deprecated"
-        lines[idx + 4] chkEq "reportStuff1"
-        lines[idx + 5] chkEq "reportStuff2"
+        lines[idx + 2] chkEq "fakeReportStuff1JustPrintLn"
+        lines[idx + 3] chkEq "fakeReportStuff2UreArrayToXXX"
+        lines[idx + 4] chkEq "processExtensions1ByReg"
+        lines[idx + 5] chkEq "processExtensions2WithDefDeprecated"
       }
     }
 
@@ -123,27 +123,29 @@ private fun onSampleSourceFunProject() {
       SYSTEM.deleteTreeWithDoubleChk(sampleSourceFunProjectPath / ".gradle", mustExist = false) { "sourcefun" in it }
       SYSTEM.deleteTreeWithDoubleChk(sampleSourceFunProjectPath / "build", mustExist = false) { "sourcefun" in it }
 
-      "On task processExtensions1" o {
-        runner.withArguments("processExtensions1")
+      "On task processExtensions1ByReg" o {
+        runner.withArguments("processExtensions1ByReg")
         val result = runner.build()
 
-        "task processExtensions1 ends with SUCCESS" o { result.task(":processExtensions1")?.outcome chkEq SUCCESS }
+        "task ends with SUCCESS" o { result.task(":processExtensions1ByReg")?.outcome chkEq SUCCESS }
 
-        // TODO: mess with generated source code and check if processExtensions1 fixes it.
+        // TODO: mess with generated source code and check if the task fixes it.
       }
 
-      "On task reportStuff1" o {
-        runner.withArguments("reportStuff1")
+      "On task fakeReportStuff1JustPrintLn" o {
+        runner.withArguments("fakeReportStuff1JustPrintLn")
         val result = runner.build()
 
-        "task reportStuff1 ends with SUCCESS" o { result.task(":reportStuff1")?.outcome chkEq SUCCESS }
+        "task ends with SUCCESS" o { result.task(":fakeReportStuff1JustPrintLn")?.outcome chkEq SUCCESS }
+
+        // TODO: check printed output a bit
       }
 
-      "On task reportStuff2" o {
-        runner.withArguments("reportStuff2")
+      "On task fakeReportStuff2UreArrayToXXX" o {
+        runner.withArguments("fakeReportStuff2UreArrayToXXX")
         val result = runner.build()
 
-        "task reportStuff2 ends with SUCCESS" o { result.task(":reportStuff2")?.outcome chkEq SUCCESS }
+        "task ends with SUCCESS" o { result.task(":fakeReportStuff2UreArrayToXXX")?.outcome chkEq SUCCESS }
 
         "On generated reports" o {
           val reportsPaths = SYSTEM.list(sampleSourceFunProjectPath / "build/awesome-reports")
