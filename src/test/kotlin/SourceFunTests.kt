@@ -95,8 +95,9 @@ private fun onSingleHelloWorldProject() {
   }
 }
 
-// FIXME: do not hardcode my local paths
-private val sampleSourceFunProjectPath = "/home/marek/code/kotlin/SourceFun/sample-sourcefun".toPath()
+private val theSourceFunProjectPath = System.getenv("GITHUB_WORKSPACE")?.toPath()
+  ?: (System.getenv("HOME").chkNN { "No HOME env var available."}.toPath() / "code/kotlin/SourceFun")
+private val sampleSourceFunProjectPath = theSourceFunProjectPath / "sample-sourcefun"
 
 private fun onSampleSourceFunProject() {
   "On sample-sourcefun project" o {
