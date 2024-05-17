@@ -27,7 +27,9 @@ pluginManagement {
     includeBuild(depsDir)
   }
 
-  includeBuild("..") // SourceFun plugin itself
+  // SourceFun plugin itself
+  // (needed also as a workaround for TestKit issue with classloader - see comments in SourceFun:SourceFunTests.kt)
+  includeBuild("..")
 }
 
 plugins {

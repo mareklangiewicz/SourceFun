@@ -62,7 +62,7 @@ private fun onSingleHelloWorldProject() {
       "On gradle runner within temp environment" o {
 
         val runner = GradleRunner.create().withProjectPath(tempDir)
-        //.withPluginClasspath() // it's automatically added by java-gradle-plugin
+        //.withPluginClasspath() // see comment under other commented out invocation below
 
         "On task helloWorld" o {
           runner.withArguments("helloWorld")
@@ -108,7 +108,20 @@ private fun onSampleSourceFunProject() {
     // So it's composite-build that include THIS (SourceFun) project back! (sort of circular "dependency"?)
     // But I guess GradleRunner/GradleTestKit separates managed builds enough, so it's working fine.
     val runner = GradleRunner.create().withProjectPath(sampleSourceFunProjectPath)
-    //.withPluginClasspath() // it's automatically added by java-gradle-plugin
+    //.withPluginClasspath()
+
+    /*
+    It would be nicer to use .withPluginClasspath() it so runner inject current SourceFun plugin to tested project,
+    but then I get weird error:
+    * What went wrong:
+
+    Execution failed for task ':tasks'.
+    > Could not create task ':processExtensions1ByReg'.
+    > loader constraint violation: when resolving method 'void pl.mareklangiewicz.sourcefun.TasksKt.setSrc(pl.mareklangiewicz.sourcefun.SourceFunTask, okio.Path)' the class loader org.gradle.internal.classloader.VisitableURLClassLoader @7dce4f5e of the current class, Build_gradle$1$processExtensions1ByReg$2, and the class loader org.gradle.internal.classloader.VisitableURLClassLoader$InstrumentingVisitableURLClassLoader @4078a234 for the method's defining class, pl/mareklangiewicz/sourcefun/TasksKt, have different Class objects for the type okio/Path used in the signature (Build_gradle$1$processExtensions1ByReg$2 is in unnamed module of loader org.gradle.internal.classloader.VisitableURLClassLoader @7dce4f5e, parent loader org.gradle.internal.classloader.CachingClassLoader @783b0e4b; pl.mareklangiewicz.sourcefun.TasksKt is in unnamed module of loader org.gradle.internal.classloader.VisitableURLClassLoader$InstrumentingVisitableURLClassLoader @4078a234, parent loader org.gradle.internal.classloader.CachingClassLoader @5c7ab031)
+
+    So my workaround is not do it and use composite-build inside tested sample-sourcefun project, to include SourceFun code from there
+    (This workaround is pretty nice anyway when opening sample-sourcefun in IDE, because it allows me to test/work on both sides manually)
+    */
 
     "On gradle tasks command" o {
       runner.withArguments("tasks")
