@@ -70,7 +70,9 @@ private fun onSingleHelloWorldProject() {
           "On gradle build" o {
             val result = runner.build()
 
+            // not really needed because build() would throw if didn't end successfully; leaving as example of .outcome
             "task helloWorld ends successfully" o { result.task(":helloWorld")?.outcome chkEq SUCCESS }
+
             "output contains hello world message" o { result.output.contains("Hello world!") chkEq true }
           }
         }
@@ -131,16 +133,12 @@ private fun onSampleSourceFunProject() {
         runner.withArguments("processExtensions1ByReg")
         val result = runner.build()
 
-        "task ends with SUCCESS" o { result.task(":processExtensions1ByReg")?.outcome chkEq SUCCESS }
-
         // TODO: mess with generated source code and check if the task fixes it.
       }
 
       "On task fakeReportStuff1JustPrintLn" o {
         runner.withArguments("fakeReportStuff1JustPrintLn")
         val result = runner.build()
-
-        "task ends with SUCCESS" o { result.task(":fakeReportStuff1JustPrintLn")?.outcome chkEq SUCCESS }
 
         "visited files are printed" o {
           chk("GenericExtensions.kt" in result.output)
@@ -151,8 +149,6 @@ private fun onSampleSourceFunProject() {
       "On task fakeReportStuff2UreArrayToXXX" o {
         runner.withArguments("fakeReportStuff2UreArrayToXXX")
         val result = runner.build()
-
-        "task ends with SUCCESS" o { result.task(":fakeReportStuff2UreArrayToXXX")?.outcome chkEq SUCCESS }
 
         "On generated reports" o {
           val reportsPaths = SYSTEM.list(sampleSourceFunProjectPath / "build/awesome-reports")
