@@ -62,6 +62,7 @@ defaultGroupAndVerAndDescription(
   myLibDetails(
     name = "SourceFun",
     group = "pl.mareklangiewicz.deps", // important non default ...deps group (as accepted on gradle portal)
+    // see before any decision to change the group: https://plugins.gradle.org/docs/publish-plugin#approval
     description = "Maintain typical java/kotlin/android projects sources with fun.",
     githubUrl = "https://github.com/mareklangiewicz/SourceFun",
     version = Ver(0, 4, 7),
