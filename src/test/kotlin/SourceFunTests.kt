@@ -136,6 +136,9 @@ private fun onSampleSourceFunProject() {
 
     So my workaround is not do it and use composite-build inside tested sample-sourcefun project, to include SourceFun code from there
     (This workaround is pretty nice anyway when opening sample-sourcefun in IDE, because it allows me to test/work on both sides manually)
+
+    UPDATE: Another workaround might be to use plug.GradleShadow (newest DepsKt) in SourceFun or in sample-sourcefun?
+    TODO_someday: try to do it, but don't commit to it without understanding the issue better.
     */
 
     "On gradle tasks command" o {
