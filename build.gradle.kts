@@ -8,6 +8,10 @@ import org.jetbrains.kotlin.gradle.plugin.*
 
 plugins {
   plugAll(plugs.KotlinJvm, plugs.NexusPublish, plugs.GradlePublish, plugs.Signing)
+
+  // Note: I could probably easily include all deps in fat jar by just adding: plug(plugs.GradleShadow),
+  // but let's not do it yet; someday maybe (so I can publish all my new kground stuff fast from maven local)
+  // https://docs.gradle.org/current/userguide/publishing_gradle_plugins.html#shadow_dependencies
 }
 
 val usVer = "0.0.33" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/uspek/
