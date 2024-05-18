@@ -25,7 +25,7 @@ defaultBuildTemplateForRootProject(
     name = "Sample-SourceFun",
     description = "Sample-SourceFun",
     githubUrl = "https://github.com/mareklangiewicz/SourceFun/tree/master/sample-sourcefun",
-    version = Ver(0, 1, 1),
+    version = Ver(0, 1, 2),
     settings = LibSettings(
       withJs = false,
       withNativeLinux64 = false,
