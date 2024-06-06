@@ -80,8 +80,16 @@ fun transformSpecialExtensionsContent(content: String): String {
   val regionByteLabel = "Byte Special Extensions"
   val regionGeneratedLabel = "Generated Special Extensions"
   val ureSpecialExtensionsKt = ure {
-    val ureRegionByte = ureRegion(ureWhateva().withName("template"), regionLabel = ureText(regionByteLabel))
-    val ureRegionGenerated = ureRegion(ureWhateva(), regionLabel = ureText(regionGeneratedLabel))
+    val ureRegionByte = ureRegion(
+      ureWhateva().withName("template"),
+      regionLabel = ureText(regionByteLabel),
+      regionLabelName = "rln1"
+    )
+    val ureRegionGenerated = ureRegion(
+      ureWhateva(),
+      regionLabel = ureText(regionGeneratedLabel),
+      regionLabelName = "rln2" // has to be different than above
+    )
     val ureBeforeGenerated = ure {
       +ureWhateva()
       +ureRegionByte
