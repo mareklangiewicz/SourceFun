@@ -14,9 +14,9 @@ plugins {
   // https://docs.gradle.org/current/userguide/publishing_gradle_plugins.html#shadow_dependencies
 }
 
-val usVer = "0.0.33" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/uspek/
-val kgVer = "0.0.54" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kground/
-val klVer = "0.0.60" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kommandline/
+val usVer = "0.0.35" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/uspek/
+val kgVer = "0.0.56" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kground/
+val klVer = "0.0.62" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kommandline/
 
 repositories {
   mavenLocal()
