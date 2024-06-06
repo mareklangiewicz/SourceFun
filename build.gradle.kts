@@ -153,7 +153,7 @@ fun Project.setMyWeirdSubstitutions(
 ) {
   val foundLocalProjects: Map<String, Project?> =
     if (tryToUseLocalProjects) rules.associate { it.first to findProject(":${it.first}") }
-      else emptyMap()
+    else emptyMap()
   configurations.all {
     resolutionStrategy.dependencySubstitution {
       for ((projName, projVer) in rules)
