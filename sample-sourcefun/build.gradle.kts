@@ -10,13 +10,15 @@ import pl.mareklangiewicz.utils.*
 plugins {
   plug(plugs.NexusPublish) // not really used in this sample, but needed for [Root Build Template] to compile
   plug(plugs.KotlinMulti) apply false
-  id("pl.mareklangiewicz.sourcefun") version "0.4.07" // I includeBuild("..") in settings so version doesn't matter
+  id("pl.mareklangiewicz.sourcefun") version "0.4.08" // I includeBuild("..") in settings so version doesn't matter
 }
 
 buildscript {
   dependencies {
-    classpath("pl.mareklangiewicz:kommandline:0.0.60")
-    classpath("pl.mareklangiewicz:kgroundx-maintenance:0.0.54")
+    // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kommandline/
+    classpath("pl.mareklangiewicz:kommandline:0.0.63")
+    // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kgroundx-maintenance/
+    classpath("pl.mareklangiewicz:kgroundx-maintenance:0.0.57")
   }
 }
 
