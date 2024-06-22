@@ -15,8 +15,8 @@ plugins {
 }
 
 val usVer = "0.0.35" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/uspek/
-val kgVer = "0.0.57" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kground/
-val klVer = "0.0.63" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kommandline/
+val kgVer = "0.0.59" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kground/
+val klVer = "0.0.65" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kommandline/
 
 repositories {
   mavenLocal()
@@ -65,7 +65,7 @@ defaultGroupAndVerAndDescription(
     // see before any decision to change the group: https://plugins.gradle.org/docs/publish-plugin#approval
     description = "Maintain typical java/kotlin/android projects sources with fun.",
     githubUrl = "https://github.com/mareklangiewicz/SourceFun",
-    version = Ver(0, 4, 9),
+    version = Ver(0, 4, 10),
     // https://plugins.gradle.org/search?term=pl.mareklangiewicz
     settings = LibSettings(
       withJs = false,
@@ -175,19 +175,16 @@ fun RepositoryHandler.addRepos(settings: LibReposSettings) = with(settings) {
   if (withKotlinx) maven(repos.kotlinx)
   if (withKotlinxHtml) maven(repos.kotlinxHtml)
   if (withComposeJbDev) maven(repos.composeJbDev)
-  if (withComposeCompilerAxDev) maven(repos.composeCompilerAxDev)
   if (withKtorEap) maven(repos.ktorEap)
   if (withJitpack) maven(repos.jitpack)
 }
 
-// FIXME: doc says it could be now also applied globally instead for each task (and it works for andro too)
-// https://kotlinlang.org/docs/gradle-compiler-options.html#target-the-jvm
+// TODO_maybe: doc says it could be now also applied globally instead for each task (and it works for andro too)
 //   But it's only for jvm+andro, so probably this is better:
 //   https://kotlinlang.org/docs/gradle-compiler-options.html#for-all-kotlin-compilation-tasks
 fun TaskCollection<Task>.defaultKotlinCompileOptions(
-  jvmTargetVer: String? = vers.JvmDefaultVer, // FIXME_later: use JvmTarget.JVM_XX enum
+  jvmTargetVer: String? = null, // it's better to use jvmToolchain (normally done in fun allDefault)
   renderInternalDiagnosticNames: Boolean = false,
-  suppressComposeCheckKotlinVer: Ver? = null,
 ) = withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
   compilerOptions {
     apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0) // FIXME_later: add param.
@@ -195,11 +192,6 @@ fun TaskCollection<Task>.defaultKotlinCompileOptions(
     if (renderInternalDiagnosticNames) freeCompilerArgs.add("-Xrender-internal-diagnostic-names")
     // useful, for example, to suppress some errors when accessing internal code from some library, like:
     // @file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "EXPOSED_PARAMETER_TYPE", "EXPOSED_PROPERTY_TYPE", "CANNOT_OVERRIDE_INVISIBLE_MEMBER")
-    suppressComposeCheckKotlinVer?.ver?.let {
-      freeCompilerArgs.add(
-        "-Pplugin:androidx.compose.compiler.plugins.kotlin:suppressKotlinVersionCompatibilityCheck=$it",
-      )
-    }
   }
 }
 
