@@ -10,15 +10,15 @@ import pl.mareklangiewicz.utils.*
 plugins {
   plug(plugs.NexusPublish) // not really used in this sample, but needed for [Root Build Template] to compile
   plug(plugs.KotlinMulti) apply false
-  id("pl.mareklangiewicz.sourcefun") version "0.4.10" // I includeBuild("..") in settings so version doesn't matter
+  id("pl.mareklangiewicz.sourcefun") version "0.4.11" // I includeBuild("..") in settings so version doesn't matter
 }
 
 buildscript {
   dependencies {
     // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kommandline/
-    classpath("pl.mareklangiewicz:kommandline:0.0.65")
+    classpath("pl.mareklangiewicz:kommandline:0.0.67")
     // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kgroundx-maintenance/
-    classpath("pl.mareklangiewicz:kgroundx-maintenance:0.0.59")
+    classpath("pl.mareklangiewicz:kgroundx-maintenance:0.0.60")
   }
 }
 
@@ -27,7 +27,7 @@ defaultBuildTemplateForRootProject(
     name = "Sample-SourceFun",
     description = "Sample-SourceFun",
     githubUrl = "https://github.com/mareklangiewicz/SourceFun/tree/master/sample-sourcefun",
-    version = Ver(0, 1, 3),
+    version = Ver(0, 1, 4),
     settings = LibSettings(
       withJs = false,
       withNativeLinux64 = false,
