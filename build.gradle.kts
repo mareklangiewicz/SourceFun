@@ -14,9 +14,9 @@ plugins {
   // https://docs.gradle.org/current/userguide/publishing_gradle_plugins.html#shadow_dependencies
 }
 
-val usVer = "0.0.35" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/uspek/
-val kgVer = "0.0.59" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kground/
-val klVer = "0.0.65" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kommandline/
+val usVer = "0.0.36" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/uspek/
+val kgVer = "0.0.60" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kground/
+val klVer = "0.0.67" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kommandline/
 
 repositories {
   mavenLocal()
@@ -65,7 +65,7 @@ defaultGroupAndVerAndDescription(
     // see before any decision to change the group: https://plugins.gradle.org/docs/publish-plugin#approval
     description = "Maintain typical java/kotlin/android projects sources with fun.",
     githubUrl = "https://github.com/mareklangiewicz/SourceFun",
-    version = Ver(0, 4, 10),
+    version = Ver(0, 4, 11),
     // https://plugins.gradle.org/search?term=pl.mareklangiewicz
     settings = LibSettings(
       withJs = false,
@@ -73,6 +73,10 @@ defaultGroupAndVerAndDescription(
     ),
   ),
 )
+
+kotlin {
+  jvmToolchain(21)
+}
 
 defaultSigning()
 
