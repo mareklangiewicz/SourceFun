@@ -16,9 +16,9 @@ plugins {
 buildscript {
   dependencies {
     // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kommandline/
-    classpath("pl.mareklangiewicz:kommandline:0.0.67")
+    // classpath("pl.mareklangiewicz:kommandline:0.0.67")
     // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kgroundx-maintenance/
-    classpath("pl.mareklangiewicz:kgroundx-maintenance:0.0.60")
+    // classpath("pl.mareklangiewicz:kgroundx-maintenance:0.0.60")
   }
 }
 
