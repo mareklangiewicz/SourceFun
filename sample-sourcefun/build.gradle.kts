@@ -18,7 +18,7 @@ buildscript {
     // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kommandline/
     // classpath("pl.mareklangiewicz:kommandline:0.0.67")
     // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kgroundx-maintenance/
-    // classpath("pl.mareklangiewicz:kgroundx-maintenance:0.0.60")
+    // classpath("pl.mareklangiewicz:kgroundx-maintenance:0.0.61")
   }
 }
 
@@ -136,7 +136,7 @@ fun Project.defaultBuildTemplateForRootProject(details: LibDetails? = null) {
  * * MYKOTLIBS_ossrhPassword
  * * MYKOTLIBS_sonatypeStagingProfileId
  * * First three of these used in fun pl.mareklangiewicz.defaults.defaultSigning
- * * See DepsKt/template-mpp/template-mpp-lib/build.gradle.kts
+ * * See KGround/template-full/template-full-lib/build.gradle.kts
  */
 fun ExtraPropertiesExtension.addDefaultStuffFromSystemEnvs(envKeyMatchPrefix: String = "MYKOTLIBS_") =
   addAllFromSystemEnvs(envKeyMatchPrefix)
