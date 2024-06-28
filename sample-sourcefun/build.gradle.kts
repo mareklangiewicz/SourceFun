@@ -10,7 +10,7 @@ import pl.mareklangiewicz.utils.*
 plugins {
   plug(plugs.NexusPublish) // not really used in this sample, but needed for [Root Build Template] to compile
   plug(plugs.KotlinMulti) apply false
-  id("pl.mareklangiewicz.sourcefun") version "0.4.11" // I includeBuild("..") in settings so version doesn't matter
+  id("pl.mareklangiewicz.sourcefun") version "0.4.12" // I includeBuild("..") in settings so version doesn't matter
 }
 
 buildscript {
