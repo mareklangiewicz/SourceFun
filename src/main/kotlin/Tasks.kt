@@ -7,7 +7,6 @@ import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.text.Regex
 import kotlinx.coroutines.*
 import kotlinx.coroutines.CoroutineDispatcher
-import okio.FileSystem.Companion.SYSTEM
 import okio.Path
 import okio.Path.Companion.toOkioPath
 import org.gradle.api.DefaultTask
@@ -16,6 +15,7 @@ import org.gradle.api.file.*
 import org.gradle.api.provider.*
 import org.gradle.api.tasks.*
 import pl.mareklangiewicz.annotations.*
+import pl.mareklangiewicz.bad.chkNN
 import pl.mareklangiewicz.gradle.ulog.asULog
 import pl.mareklangiewicz.io.readUtf8
 import pl.mareklangiewicz.io.writeUtf8
@@ -70,6 +70,7 @@ abstract class SourceFunTask : SourceTask() {
 
   fun setOutput(path: Path) = outputDirProperty.set(path.toFile())
 
+  @DelicateApi("The fun SourceFunTask.setNiceTaskAction is nicer.")
   fun setTaskAction(action: (srcTree: FileTree, outDir: Directory) -> Unit) {
     taskActionProperty.set(action)
     taskActionProperty.finalizeValue()
@@ -92,29 +93,75 @@ var SourceFunTask.out: Path
   set(value) = setOutput(value)
 
 
-fun SourceFunTask.setVisitFun(action: FileVisitDetails.(outDir: Directory) -> Unit) {
-  setTaskAction { srcTree, outDir -> srcTree.visit { it.action(outDir) } }
+@DelicateApi("Try SourceFunTask.setForEachFileFun (it's suspending style with context, and it's using okio paths).")
+fun SourceFunTask.setBlockingVisitFun(visit: FileVisitDetails.(outDir: Directory) -> Unit) =
+  setTaskAction { srcTree, outDir -> srcTree.visit { it.visit(outDir) } }
+
+
+/**
+ * Files paths are sorted kinda alphabetically ([okio.Path.compareTo]) before calling the action.
+ * You should write any output **only** inside outDirRootPath dir.
+ */
+@OptIn(DelicateApi::class)
+fun SourceFunTask.setNiceTaskAction(action: suspend (srcFilesSorted: List<Path>, outDirRootPath: Path) -> Unit) =
+  setTaskAction { srcTree, outDir -> runWithUCtxForTask {
+    val srcFilesSorted = srcTree.filter { it.isFile }.map { it.toOkioPath(normalize = true) }.sorted()
+    val outRootPath = outDir.asFile.toOkioPath()
+    action(srcFilesSorted, outRootPath)
+  } }
+
+
+/**
+ * @param process Receiver pair: this.first path is absolute input file path,
+ * and this.second is **suggested** absolute output path where to write the result.
+ * Files paths are sorted kinda alphabetically ([okio.Path.compareTo]) before calling visit on each of them.
+ * Suggested output paths are computed by first checking all input files for common part,
+ * then constructing analogous paths under [SourceFunTask.out] with that common prefix stripped away.
+ * Even if you don't use suggested path, you still should write any output **only** in [SourceFunTask.out] dir.
+ */
+fun SourceFunTask.setForEachFileFun(process: suspend Pair<Path, Path>.() -> Unit) =
+  setNiceTaskAction { srcFilesSorted, outDirRootPath ->
+    srcFilesSorted.isEmpty() && return@setNiceTaskAction
+    val inCommonDir = srcFilesSorted.map { it.parent }.commonPart().chkNN { "Input files paths have different roots." }
+    srcFilesSorted.forEach { inAbsPath ->
+      val inRelPath = inAbsPath.relativeTo(inCommonDir)
+      val outAbsPath = outDirRootPath / inRelPath
+      (inAbsPath to outAbsPath).process()
+    }
+  }
+
+
+// TODO_later: use impl from new kground-io when published
+tailrec fun Path?.commonPartWith(that: Path?): Path? = when {
+  this == that -> this
+  this == null || that == null -> null
+  segmentsBytes.size > that.segmentsBytes.size -> parent.commonPartWith(that)
+  segmentsBytes.size < that.segmentsBytes.size -> commonPartWith(that.parent)
+  else -> parent.commonPartWith(that.parent)
 }
 
-/** Note: this version uses the same file relative path/name for both input and output */
-fun SourceFunTask.setVisitPathFun(action: Pair<Path, Path>.() -> Unit) {
-  setVisitFun { outDir ->
-    if (isDirectory) return@setVisitFun
-    val inPath = file.toOkioPath()
-    val outPath = outDir.file(path).asFile.toOkioPath()
-    (inPath to outPath).action()
-  }
+// TODO_later: use impl from new kground-io when published
+fun List<Path?>.commonPart(): Path? = when {
+  isEmpty() -> null
+  size == 1 -> this[0]
+  else -> reduce { path1, path2 -> path1.commonPartWith(path2) }
 }
 
 /** Note: this version writes returned string into out (second) path. */
-fun SourceFunTask.setTransformPathFun(transform: Pair<Path, Path>.() -> String?) = setVisitPathFun {
-  transform()?.let { SYSTEM.writeUtf8(second, it, createParentDir = true) }
+@Deprecated("Use setTransformFun or setForEachFileFun")
+fun SourceFunTask.setTransformFileFun(transform: suspend Pair<Path, Path>.() -> String?) = setForEachFileFun {
+  transform()?.let { implictx<UFileSys>().writeUtf8(second, it, createParentDir = true) }
 }
 
-/** Note: this version reads in (first) path into "it" and writes returned string into out (second) path. */
-fun SourceFunTask.setTransformFun(transform: Pair<Path, Path>.(String) -> String?) {
-  setTransformPathFun { transform(SYSTEM.readUtf8(first)) }
-}
+/** Reads in (first) path, calls transform, and writes returned string (if not null) into out (second) path. */
+fun SourceFunTask.setTransformFun(transform: suspend Pair<Path, Path>.(String) -> String?) =
+  setForEachFileFun {
+    val fs = implictx<UFileSys>()
+    val input = fs.readUtf8(first)
+    val output = transform(input)
+    output?.let { fs.writeUtf8(second, it, createParentDir = true) }
+  }
+
 
 
 @UntrackedTask(because = "The taskAction property can not be serializable. Regex probably is not serializable as well.")
@@ -157,7 +204,7 @@ abstract class SourceUreTask : SourceFunTask() {
 abstract class VersionDetailsTask : DefaultTask() {
   @get:OutputDirectory abstract val generatedAssetsDir: DirectoryProperty
   @OptIn(DelicateApi::class)
-  @TaskAction fun execute() = runBlocking {
+  @TaskAction fun execute() = runWithUCtxForTask {
     val commit = gitHash().ax().single()
     val time = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)
     generatedAssetsDir.dir("version-details").get().run {

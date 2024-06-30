@@ -286,6 +286,7 @@ fun FileSystem.deleteTreeWithDoubleChk(
 }
 
 // TODO_later: maybe some flavor of it should be in kground
+// TODO NOW ?? better version that not leaks line-breaks in kground-io? (and above fun too)
 
 private fun FileSystem.injectChangedRegion(
   path: Path,

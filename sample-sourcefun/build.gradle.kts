@@ -1,3 +1,6 @@
+
+// region [Custom Basic Root Build Imports and Plugs]
+
 import pl.mareklangiewicz.sourcefun.*
 import pl.mareklangiewicz.ure.*
 import pl.mareklangiewicz.annotations.*
@@ -8,10 +11,12 @@ import pl.mareklangiewicz.deps.*
 import pl.mareklangiewicz.utils.*
 
 plugins {
-  plug(plugs.NexusPublish) // not really used in this sample, but needed for [Root Build Template] to compile
   plug(plugs.KotlinMulti) apply false
+  plug(plugs.NexusPublish)
   id("pl.mareklangiewicz.sourcefun") version "0.4.12" // I includeBuild("..") in settings so version doesn't matter
 }
+
+// endregion [Custom Basic Root Build Imports and Plugs]
 
 buildscript {
   dependencies {
@@ -58,7 +63,7 @@ tasks.register<SourceFunTask>("fakeReportStuff1JustPrintLn") {
   group = "awesome"
   src = extensionsPath
   out = reportsPath
-  setVisitPathFun {
+  setForEachFileFun {
     println("FRS1 Faking report (will NOT create any files in $reportsPath)")
     println("FRS1 <- $first:1") // :1 is for IDE to make it clickable
     println("FRS1 -> $second:1") // no file will be there, unless other task created it

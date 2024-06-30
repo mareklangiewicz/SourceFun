@@ -1,3 +1,6 @@
+
+// region [[Basic MPP Lib Build Imports and Plugs]]
+
 import org.jetbrains.kotlin.gradle.dsl.*
 import org.jetbrains.kotlin.gradle.plugin.*
 import pl.mareklangiewicz.defaults.*
@@ -5,9 +8,14 @@ import pl.mareklangiewicz.deps.*
 import pl.mareklangiewicz.utils.*
 
 plugins {
-  plugAll(plugs.KotlinMulti)
+  plugAll(
+    plugs.KotlinMulti,
+    plugs.MavenPublish,
+    plugs.Signing,
+  )
 }
 
+// endregion [[Basic MPP Lib Build Imports and Plugs]]
 
 defaultBuildTemplateForBasicMppLib()
 
