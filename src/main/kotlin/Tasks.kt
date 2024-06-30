@@ -26,6 +26,8 @@ import pl.mareklangiewicz.kommand.ax
 import pl.mareklangiewicz.kommand.core.curlDownload
 import pl.mareklangiewicz.kommand.getSysCLI
 import pl.mareklangiewicz.kommand.git.gitHash
+import pl.mareklangiewicz.kommand.git.gitStatus
+import pl.mareklangiewicz.kommand.kommand
 import pl.mareklangiewicz.uctx.uctx
 import pl.mareklangiewicz.ulog.ULog
 import pl.mareklangiewicz.ure.UReplacement
@@ -200,21 +202,28 @@ abstract class SourceUreTask : SourceFunTask() {
   }
 }
 
-@UntrackedTask(because = "Git version and build time is external state and can't be tracked.")
+
+@Deprecated("Better to just use sourceFun and generate needed details manually using kommandline, etc.")
+@UntrackedTask(because = "A lot of state, like git version and build time, is external state and can't be tracked.")
 abstract class VersionDetailsTask : DefaultTask() {
   @get:OutputDirectory abstract val generatedAssetsDir: DirectoryProperty
   @OptIn(DelicateApi::class)
   @TaskAction fun execute() = runWithUCtxForTask {
-    val commit = gitHash().ax().single()
     val time = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)
+    val commit = gitHash().ax().single()
+    val tags = kommand("git", "tag", "--points-at").ax().joinToString(separator = "\n")
+    val status = gitStatus().ax().joinToString(separator = "\n")
     generatedAssetsDir.dir("version-details").get().run {
       project.mkdir(this)
-      file("commit").asFile.writeText(commit)
-      file("buildtime").asFile.writeText(time)
+      file("build.time").asFile.writeText(time)
+      file("git.commit").asFile.writeText(commit)
+      file("git.tags").asFile.writeText(tags)
+      file("git.status").asFile.writeText(status)
     }
   }
 }
 
+@Deprecated("Better to just use sourceFun and download files manually using kommandline, etc.")
 @UntrackedTask(because = "Downloaded file is external state and can't be tracked.")
 abstract class DownloadFileTask : DefaultTask() { // TODO_later: nice task for downloading multiple files.
   @get:Input abstract val inputUrl: Property<String>
