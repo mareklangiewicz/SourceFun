@@ -26,7 +26,6 @@ import pl.mareklangiewicz.kommand.ax
 import pl.mareklangiewicz.kommand.core.curlDownload
 import pl.mareklangiewicz.kommand.getSysCLI
 import pl.mareklangiewicz.kommand.git.gitHash
-import pl.mareklangiewicz.kommand.git.gitStatus
 import pl.mareklangiewicz.kommand.kommand
 import pl.mareklangiewicz.uctx.uctx
 import pl.mareklangiewicz.ulog.ULog
@@ -205,20 +204,20 @@ abstract class SourceUreTask : SourceFunTask() {
 
 @Deprecated("Better to just use sourceFun and generate needed details manually using kommandline, etc.")
 @UntrackedTask(because = "A lot of state, like git version and build time, is external state and can't be tracked.")
-abstract class VersionDetailsTask : DefaultTask() {
-  @get:OutputDirectory abstract val generatedAssetsDir: DirectoryProperty
+abstract class BuildDetailsTask : DefaultTask() {
+  @get:OutputDirectory abstract val outputDir: DirectoryProperty
   @OptIn(DelicateApi::class)
   @TaskAction fun execute() = runWithUCtxForTask {
     val time = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)
-    val commit = gitHash().ax().single()
+    val hash = gitHash().ax().single()
     val tags = kommand("git", "tag", "--points-at").ax().joinToString(separator = "\n")
-    val status = gitStatus().ax().joinToString(separator = "\n")
-    generatedAssetsDir.dir("version-details").get().run {
+    // val status = gitStatus().ax().joinToString(separator = "\n")
+    outputDir.get().run {
       project.mkdir(this)
       file("build.time").asFile.writeText(time)
-      file("git.commit").asFile.writeText(commit)
-      file("git.tags").asFile.writeText(tags)
-      file("git.status").asFile.writeText(status)
+      file("build.git.commit.hash").asFile.writeText(hash)
+      file("build.git.commit.tags").asFile.writeText(tags)
+      // file("git.status").asFile.writeText(status)
     }
   }
 }
