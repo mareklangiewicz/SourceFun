@@ -15,8 +15,8 @@ plugins {
 }
 
 val usVer = "0.0.36" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/uspek/
-val kgVer = "0.0.61" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kground/
-val klVer = "0.0.67" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kommandline/
+val kgVer = "0.0.64" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kground/
+val klVer = "0.0.69" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kommandline/
 
 repositories {
   mavenLocal()
