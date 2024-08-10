@@ -47,7 +47,7 @@ suspend inline fun <T: Task, R> T.uctxForTask(
   coroutineName: String? = name,
   dispatcher: CoroutineDispatcher? = getSysDispatcherForIO(),
   fs: UFileSys? = getSysUFileSys(),
-  cwd: UCWD? = fs?.getSysWorkingDir()?.let(::UCWD),
+  cwd: UWorkDir? = fs?.getSysWorkingDir()?.let(::UWorkDir),
   cli: CLI? = getSysCLI(),
   log: ULog? = logger.asULog(alsoPrintLn = true),
   submit: USubmit? = null,
@@ -151,13 +151,13 @@ fun List<Path?>.commonPart(): Path? = when {
 /** Note: this version writes returned string into out (second) path. */
 @Deprecated("Use setTransformFun or setForEachFileFun")
 fun SourceFunTask.setTransformFileFun(transform: suspend Pair<Path, Path>.() -> String?) = setForEachFileFun {
-  transform()?.let { implictx<UFileSys>().writeUtf8(second, it, createParentDir = true) }
+  transform()?.let { localUFileSys().writeUtf8(second, it, createParentDir = true) }
 }
 
 /** Reads in (first) path, calls transform, and writes returned string (if not null) into out (second) path. */
 fun SourceFunTask.setTransformFun(transform: suspend Pair<Path, Path>.(String) -> String?) =
   setForEachFileFun {
-    val fs = implictx<UFileSys>()
+    val fs = localUFileSys()
     val input = fs.readUtf8(first)
     val output = transform(input)
     output?.let { fs.writeUtf8(second, it, createParentDir = true) }
