@@ -15,7 +15,7 @@ plugins {
 }
 
 val usVer = "0.0.38" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/uspek/
-val kgVer = "0.0.79" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kground/
+val kgVer = "0.0.80" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kground/
 val klVer = "0.0.83" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kommandline/
 
 repositories {
@@ -31,7 +31,7 @@ dependencies {
   api(Langiewicz.kgroundx)
   api(Langiewicz.kground_io)
   api(Langiewicz.kgroundx_io)
-  // api(Langiewicz.kgroundx_maintenance)
+  api(Langiewicz.kgroundx_maintenance)
   api(Langiewicz.kommandline)
   api(Langiewicz.kommandsamples)
   testImplementation(Langiewicz.uspekx_junit5)
@@ -65,7 +65,7 @@ defaultGroupAndVerAndDescription(
     // see before any decision to change the group: https://plugins.gradle.org/docs/publish-plugin#approval
     description = "Maintain typical java/kotlin/android projects sources with fun.",
     githubUrl = "https://github.com/mareklangiewicz/SourceFun",
-    version = Ver(0, 4, 19),
+    version = Ver(0, 4, 20),
     // https://plugins.gradle.org/search?term=pl.mareklangiewicz
     settings = LibSettings(
       withJs = false,
