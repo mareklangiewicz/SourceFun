@@ -13,7 +13,7 @@ import pl.mareklangiewicz.utils.*
 plugins {
   plug(plugs.KotlinMulti) apply false
   plug(plugs.NexusPublish)
-  id("pl.mareklangiewicz.sourcefun") version "0.4.18" // I includeBuild("..") in settings so version doesn't matter
+  id("pl.mareklangiewicz.sourcefun") version "0.4.20" // I includeBuild("..") in settings so version doesn't matter
 }
 
 // endregion [Custom Basic Root Build Imports and Plugs]
@@ -32,7 +32,7 @@ defaultBuildTemplateForRootProject(
     name = "Sample-SourceFun",
     description = "Sample-SourceFun",
     githubUrl = "https://github.com/mareklangiewicz/SourceFun/tree/master/sample-sourcefun",
-    version = Ver(0, 1, 6),
+    version = Ver(0, 1, 7),
     settings = LibSettings(
       withJs = false,
       withNativeLinux64 = false,
