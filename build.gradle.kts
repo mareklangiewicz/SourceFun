@@ -71,7 +71,7 @@ defaultGroupAndVerAndDescription(
 )
 
 kotlin {
-  jvmToolchain(22)
+  jvmToolchain(23)
 }
 
 defaultSigning()
