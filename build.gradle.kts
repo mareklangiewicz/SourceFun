@@ -14,10 +14,6 @@ plugins {
   // https://docs.gradle.org/current/userguide/publishing_gradle_plugins.html#shadow_dependencies
 }
 
-val usVer = "0.0.38" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/uspek/
-val kgVer = "0.0.81" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kground/
-val klVer = "0.0.83" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kommandline/
-
 repositories {
   mavenLocal()
   google()
@@ -32,24 +28,24 @@ dependencies {
   api(Langiewicz.kground_io)
   api(Langiewicz.kgroundx_io)
   api(Langiewicz.kgroundx_maintenance)
-  api(Langiewicz.kommandline)
-  api(Langiewicz.kommandsamples)
+  api(Langiewicz.kommand_line)
+  api(Langiewicz.kommand_samples)
   testImplementation(Langiewicz.uspekx_junit5)
   testImplementation(Org.JUnit.Jupiter.junit_jupiter)
   testImplementation(Org.JUnit.Jupiter.junit_jupiter_engine)
   // TODO: check separation between api and engine - so I can do similar in ULog (with separate bridges to CLog etc.)
 }
 
+val kgVer = "0.1.03" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kground/
+
 setMyWeirdSubstitutions(
-  "uspek" to usVer,
-  "uspek-junit5" to usVer,
   "kground" to kgVer,
   "kgroundx" to kgVer,
   "kground-io" to kgVer,
   "kgroundx-io" to kgVer,
   "kgroundx-maintenance" to kgVer,
-  "kommandline" to klVer,
-  "kommandsamples" to klVer,
+  "kommand-line" to kgVer,
+  "kommand-samples" to kgVer,
 )
 
 tasks.defaultKotlinCompileOptions()
@@ -172,6 +168,7 @@ fun Project.setMyWeirdSubstitutions(
 }
 
 fun RepositoryHandler.addRepos(settings: LibReposSettings) = with(settings) {
+  @Suppress("DEPRECATION")
   if (withMavenLocal) mavenLocal()
   if (withMavenCentral) mavenCentral()
   if (withGradle) gradlePluginPortal()
@@ -187,11 +184,12 @@ fun RepositoryHandler.addRepos(settings: LibReposSettings) = with(settings) {
 //   But it's only for jvm+andro, so probably this is better:
 //   https://kotlinlang.org/docs/gradle-compiler-options.html#for-all-kotlin-compilation-tasks
 fun TaskCollection<Task>.defaultKotlinCompileOptions(
+  apiVer: KotlinVersion = KotlinVersion.KOTLIN_2_1,
   jvmTargetVer: String? = null, // it's better to use jvmToolchain (normally done in fun allDefault)
   renderInternalDiagnosticNames: Boolean = false,
 ) = withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
   compilerOptions {
-    apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0) // FIXME_later: add param.
+    apiVersion.set(apiVer)
     jvmTargetVer?.let { jvmTarget = JvmTarget.fromTarget(it) }
     if (renderInternalDiagnosticNames) freeCompilerArgs.add("-Xrender-internal-diagnostic-names")
     // useful, for example, to suppress some errors when accessing internal code from some library, like:
