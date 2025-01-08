@@ -13,7 +13,7 @@ import pl.mareklangiewicz.utils.*
 plugins {
   plug(plugs.KotlinMulti) apply false
   plug(plugs.NexusPublish)
-  id("pl.mareklangiewicz.sourcefun") version "0.4.20" // I includeBuild("..") in settings so version doesn't matter
+  id("pl.mareklangiewicz.sourcefun") version "0.4.23" // I includeBuild("..") in settings so version doesn't matter
 }
 
 // endregion [Custom Basic Root Build Imports and Plugs]

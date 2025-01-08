@@ -61,7 +61,7 @@ defaultGroupAndVerAndDescription(
     // see before any decision to change the group: https://plugins.gradle.org/docs/publish-plugin#approval
     description = "Maintain typical java/kotlin/android projects sources with fun.",
     githubUrl = "https://github.com/mareklangiewicz/SourceFun",
-    version = Ver(0, 4, 22),
+    version = Ver(0, 4, 23),
     // https://plugins.gradle.org/search?term=pl.mareklangiewicz
     settings = LibSettings(
       withJs = false,
