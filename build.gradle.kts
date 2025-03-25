@@ -5,9 +5,10 @@ import pl.mareklangiewicz.deps.*
 import pl.mareklangiewicz.utils.*
 import org.jetbrains.kotlin.gradle.dsl.*
 import org.jetbrains.kotlin.gradle.plugin.*
+import com.vanniktech.maven.publish.*
 
 plugins {
-  plugAll(plugs.KotlinJvm, plugs.NexusPublish, plugs.GradlePublish, plugs.Signing)
+  plugAll(plugs.KotlinJvm, plugs.GradlePublish, plugs.VannikPublish)
 
   // Note: I could probably easily include all deps in fat jar by just adding: plug(plugs.GradleShadow),
   // but let's not do it yet; someday maybe (so I can publish all my new kground stuff fast from maven local)
@@ -36,7 +37,7 @@ dependencies {
   // TODO: check separation between api and engine - so I can do similar in ULog (with separate bridges to CLog etc.)
 }
 
-val kgVer = "0.1.05" // https://s01.oss.sonatype.org/content/repositories/releases/pl/mareklangiewicz/kground/
+val kgVer = "0.1.07" // https://central.sonatype.com/artifact/pl.mareklangiewicz/kground/versions
 
 setMyWeirdSubstitutions(
   "kground" to kgVer,
@@ -52,29 +53,27 @@ tasks.defaultKotlinCompileOptions()
 
 tasks.defaultTestsOptions()
 
-ext.addDefaultStuffFromSystemEnvs()
-
-defaultGroupAndVerAndDescription(
-  myLibDetails(
-    name = "SourceFun",
-    group = "pl.mareklangiewicz.deps", // important non default ...deps group (as accepted on gradle portal)
-    // see before any decision to change the group: https://plugins.gradle.org/docs/publish-plugin#approval
-    description = "Maintain typical java/kotlin/android projects sources with fun.",
-    githubUrl = "https://github.com/mareklangiewicz/SourceFun",
-    version = Ver(0, 4, 24),
-    // https://plugins.gradle.org/search?term=pl.mareklangiewicz
-    settings = LibSettings(
-      withJs = false,
-      compose = null,
-    ),
+val details = myLibDetails(
+  name = "SourceFun",
+  group = "pl.mareklangiewicz.deps", // important non default ...deps group (as accepted on gradle portal)
+  // see before any decision to change the group: https://plugins.gradle.org/docs/publish-plugin#approval
+  description = "Maintain typical java/kotlin/android projects sources with fun.",
+  githubUrl = "https://github.com/mareklangiewicz/SourceFun",
+  version = Ver(0, 4, 25),
+  // https://plugins.gradle.org/search?term=pl.mareklangiewicz
+  settings = LibSettings(
+    withJs = false,
+    compose = null,
   ),
 )
+
+defaultBuildTemplateForRootProject(details)
 
 kotlin {
   jvmToolchain(23)
 }
 
-defaultSigning()
+defaultPublishing(details)
 
 gradlePlugin {
   website.set("https://github.com/mareklangiewicz/SourceFun")
@@ -93,49 +92,10 @@ gradlePlugin {
 
 // region [[Root Build Template]]
 
-/** Publishing to Sonatype OSSRH has to be explicitly allowed here, by setting withSonatypeOssPublishing to true. */
 fun Project.defaultBuildTemplateForRootProject(details: LibDetails? = null) {
-  ext.addDefaultStuffFromSystemEnvs()
   details?.let {
     rootExtLibDetails = it
     defaultGroupAndVerAndDescription(it)
-    if (it.settings.withSonatypeOssPublishing) defaultSonatypeOssNexusPublishing()
-  }
-
-  // kinda workaround for kinda issue with kotlin native
-  // https://youtrack.jetbrains.com/issue/KT-48410/Sync-failed.-Could-not-determine-the-dependencies-of-task-commonizeNativeDistribution.#focus=Comments-27-5144160.0-0
-  repositories { mavenCentral() }
-}
-
-/**
- * System.getenv() should contain six env variables with given prefix, like:
- * * MYKOTLIBS_signing_keyId
- * * MYKOTLIBS_signing_password
- * * MYKOTLIBS_signing_keyFile (or MYKOTLIBS_signing_key with whole signing key)
- * * MYKOTLIBS_ossrhUsername
- * * MYKOTLIBS_ossrhPassword
- * * MYKOTLIBS_sonatypeStagingProfileId
- * * First three of these used in fun pl.mareklangiewicz.defaults.defaultSigning
- * * See KGround/template-full/template-full-lib/build.gradle.kts
- */
-fun ExtraPropertiesExtension.addDefaultStuffFromSystemEnvs(envKeyMatchPrefix: String = "MYKOTLIBS_") =
-  addAllFromSystemEnvs(envKeyMatchPrefix)
-
-fun Project.defaultSonatypeOssNexusPublishing(
-  sonatypeStagingProfileId: String = rootExtString["sonatypeStagingProfileId"],
-  ossrhUsername: String = rootExtString["ossrhUsername"],
-  ossrhPassword: String = rootExtString["ossrhPassword"],
-) {
-  nexusPublishing {
-    this.repositories {
-      sonatype {  // only for users registered in Sonatype after 24 Feb 2021
-        stagingProfileId put sonatypeStagingProfileId
-        username put ossrhUsername
-        password put ossrhPassword
-        nexusUrl put repos.sonatypeOssNexus
-        snapshotRepositoryUrl put repos.sonatypeOssSnapshots
-      }
-    }
   }
 }
 
@@ -210,7 +170,7 @@ fun TaskCollection<Task>.defaultTestsOptions(
 }
 
 // Provide artifacts information requited by Maven Central
-fun MavenPublication.defaultPOM(lib: LibDetails) = pom {
+fun MavenPom.defaultPOM(lib: LibDetails) {
   name put lib.name
   description put lib.description
   url put lib.githubUrl
@@ -231,93 +191,14 @@ fun MavenPublication.defaultPOM(lib: LibDetails) = pom {
   scm { url put lib.githubUrl }
 }
 
-/** See also: root project template-full: addDefaultStuffFromSystemEnvs */
-fun Project.defaultSigning(
-  keyId: String = rootExtString["signing.keyId"],
-  key: String = rootExtReadFileUtf8TryOrNull("signing.keyFile") ?: rootExtString["signing.key"],
-  password: String = rootExtString["signing.password"],
-) = extensions.configure<SigningExtension> {
-  useInMemoryPgpKeys(keyId, key, password)
-  sign(extensions.getByType<PublishingExtension>().publications)
-}
-
-fun Project.defaultPublishing(
-  lib: LibDetails,
-  readmeFile: File = File(rootDir, "README.md"),
-  withSignErrorWorkaround: Boolean = true,
-  withPublishingPrintln: Boolean = false, // FIXME_later: enabling brakes gradle android publications
-) {
-
-  val readmeJavadocJar by tasks.registering(Jar::class) {
-    from(readmeFile) // TODO_maybe: use dokka to create real docs? (but it's not even java..)
-    archiveClassifier put "javadoc"
-  }
-
-  extensions.configure<PublishingExtension> {
-
-    // We have at least two cases:
-    // 1. With plug.KotlinMulti it creates publications automatically (so no need to create here)
-    // 2. With plug.KotlinJvm it does not create publications (so we have to create it manually)
-    if (plugins.hasPlugin("org.jetbrains.kotlin.jvm")) {
-      publications.create<MavenPublication>("jvm") {
-        from(components["kotlin"])
-      }
-    }
-
-    publications.withType<MavenPublication> {
-      artifact(readmeJavadocJar)
-      // Adding javadoc artifact generates warnings like:
-      // Execution optimizations have been disabled for task ':uspek:signJvmPublication'
-      // (UPDATE: now it's errors - see workaround below)
-      // It looks like a bug in kotlin multiplatform plugin:
-      // https://youtrack.jetbrains.com/issue/KT-46466
-      // FIXME_someday: Watch the issue.
-      // If it's a bug in kotlin multiplatform then remove this comment when it's fixed.
-      // Some related bug reports:
-      // https://youtrack.jetbrains.com/issue/KT-47936
-      // https://github.com/gradle/gradle/issues/17043
-
-      defaultPOM(lib)
-    }
-  }
-  if (withSignErrorWorkaround) tasks.withSignErrorWorkaround() // very much related to comments above too
-  if (withPublishingPrintln) tasks.withPublishingPrintln()
-}
-
-/*
-Hacky workaround for gradle error with signing+publishing on gradle 8.1-rc-1:
-
-FAILURE: Build failed with an exception.
-
-* What went wrong:
-A problem was found with the configuration of task ':template-full-lib:signJvmPublication' (type 'Sign').
-  - Gradle detected a problem with the following location: '/home/marek/code/kotlin/KGround/template-full/template-full-lib/build/libs/template-full-lib-0.0.02-javadoc.jar.asc'.
-
-    Reason: Task ':template-full-lib:publishJsPublicationToMavenLocal' uses this output of task ':template-full-lib:signJvmPublication' without declaring an explicit or implicit dependency. This can lead to incorrect results being produced, depending on what order the tasks are executed.
-
-    Possible solutions:
-      1. Declare task ':template-full-lib:signJvmPublication' as an input of ':template-full-lib:publishJsPublicationToMavenLocal'.
-      2. Declare an explicit dependency on ':template-full-lib:signJvmPublication' from ':template-full-lib:publishJsPublicationToMavenLocal' using Task#dependsOn.
-      3. Declare an explicit dependency on ':template-full-lib:signJvmPublication' from ':template-full-lib:publishJsPublicationToMavenLocal' using Task#mustRunAfter.
-
-    Please refer to https://docs.gradle.org/8.1-rc-1/userguide/validation_problems.html#implicit_dependency for more details about this problem.
-
- */
-fun TaskContainer.withSignErrorWorkaround() =
-  withType<AbstractPublishToMaven>().configureEach { dependsOn(withType<Sign>()) }
-
-fun TaskContainer.withPublishingPrintln() = withType<AbstractPublishToMaven>().configureEach {
-  val coordinates = publication.run { "$groupId:$artifactId:$version" }
-  when (this) {
-    is PublishToMavenRepository -> doFirst {
-      println("Publishing $coordinates to ${repository.url}")
-    }
-    is PublishToMavenLocal -> doFirst {
-      val localRepo = System.getenv("HOME")!! + "/.m2/repository"
-      val localPath = localRepo + publication.run { "/$groupId/$artifactId".replace('.', '/') }
-      println("Publishing $coordinates to $localPath")
-    }
-  }
+fun Project.defaultPublishing(lib: LibDetails) = extensions.configure<MavenPublishBaseExtension> {
+  propertiesTryOverride("signingInMemoryKey", "signingInMemoryKeyPassword", "mavenCentralPassword")
+  if (lib.settings.withSonatypeOssPublishing)
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = false)
+  signAllPublications()
+  // Note: artifactId is not lib.name but current project.name (module name)
+  coordinates(groupId = lib.group, artifactId = name, version = lib.version.str)
+  pom { defaultPOM(lib) }
 }
 
 // endregion [[Kotlin Module Build Template]]
