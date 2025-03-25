@@ -34,6 +34,7 @@ dependencies {
   testImplementation(Langiewicz.uspekx_junit5)
   testImplementation(Org.JUnit.Jupiter.junit_jupiter)
   testImplementation(Org.JUnit.Jupiter.junit_jupiter_engine)
+  testRuntimeOnly("org.junit.platform:junit-platform-launcher")
   // TODO: check separation between api and engine - so I can do similar in ULog (with separate bridges to CLog etc.)
 }
 
