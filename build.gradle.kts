@@ -34,7 +34,10 @@ dependencies {
   testImplementation(Langiewicz.uspekx_junit5)
   testImplementation(Org.JUnit.Jupiter.junit_jupiter)
   testImplementation(Org.JUnit.Jupiter.junit_jupiter_engine)
-  testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+  testRuntimeOnly(Org.JUnit.Platform.junit_platform_launcher)
+  // Explicit platform launcher required in new gradle:
+  // https://docs.gradle.org/8.13/userguide/upgrading_version_8.html#test_framework_implementation_dependencies
+
   // TODO: check separation between api and engine - so I can do similar in ULog (with separate bridges to CLog etc.)
 }
 
