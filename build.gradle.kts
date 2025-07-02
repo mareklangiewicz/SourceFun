@@ -41,7 +41,7 @@ dependencies {
   // TODO: check separation between api and engine - so I can do similar in ULog (with separate bridges to CLog etc.)
 }
 
-val kgVer = "0.1.11" // https://central.sonatype.com/artifact/pl.mareklangiewicz/kground/versions
+val kgVer = "0.1.12" // https://central.sonatype.com/artifact/pl.mareklangiewicz/kground/versions
 
 setMyWeirdSubstitutions(
   "kground" to kgVer,
@@ -63,7 +63,7 @@ val details = myLibDetails(
   // see before any decision to change the group: https://plugins.gradle.org/docs/publish-plugin#approval
   description = "Maintain typical java/kotlin/android projects sources with fun.",
   githubUrl = "https://github.com/mareklangiewicz/SourceFun",
-  version = Ver(0, 4, 28),
+  version = Ver(0, 4, 29),
   // https://plugins.gradle.org/search?term=pl.mareklangiewicz
   settings = LibSettings(
     withJs = false,
