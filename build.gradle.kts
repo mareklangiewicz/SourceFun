@@ -8,7 +8,9 @@ import org.jetbrains.kotlin.gradle.plugin.*
 import com.vanniktech.maven.publish.*
 
 plugins {
-  plugAll(plugs.KotlinJvm, plugs.GradlePublish, plugs.VannikPublish)
+  // plugAll(plugs.KotlinJvm, plugs.GradlePublish, plugs.VannikPublish)
+  plugAll(plugs.KotlinJvm, plugs.GradlePublish)
+  id("com.vanniktech.maven.publish") version "0.32.0"
 
   // Note: I could probably easily include all deps in fat jar by just adding: plug(plugs.GradleShadow),
   // but let's not do it yet; someday maybe (so I can publish all my new kground stuff fast from maven local)
