@@ -24,6 +24,9 @@ jobs:
         distribution: 'zulu'
     - id: 'step-2'
       uses: 'gradle/actions/setup-gradle@v4'
+      with:
+        cache-disabled: true
+        cache-cleanup: always
     - id: 'step-3'
       name: 'build'
       run: './gradlew build --no-configuration-cache --no-parallel'
