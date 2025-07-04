@@ -8,9 +8,7 @@ import org.jetbrains.kotlin.gradle.plugin.*
 import com.vanniktech.maven.publish.*
 
 plugins {
-  // plugAll(plugs.KotlinJvm, plugs.GradlePublish, plugs.VannikPublish)
-  plugAll(plugs.KotlinJvm, plugs.GradlePublish)
-  id("com.vanniktech.maven.publish") version "0.32.0"
+  plugAll(plugs.KotlinJvm, plugs.GradlePublish, plugs.VannikPublish)
 
   // Note: I could probably easily include all deps in fat jar by just adding: plug(plugs.GradleShadow),
   // but let's not do it yet; someday maybe (so I can publish all my new kground stuff fast from maven local)
@@ -199,9 +197,9 @@ fun MavenPom.defaultPOM(lib: LibDetails) {
 
 fun Project.defaultPublishing(lib: LibDetails) = extensions.configure<MavenPublishBaseExtension> {
   propertiesTryOverride("signingInMemoryKey", "signingInMemoryKeyPassword", "mavenCentralPassword")
-  if (lib.settings.withSonatypeOssPublishing)
-    publishToMavenCentral(automaticRelease = false)
+  if (lib.settings.withCentralPublish) publishToMavenCentral(automaticRelease = false)
   signAllPublications()
+  signAllPublicationsFixSignatory()
   // Note: artifactId is not lib.name but current project.name (module name)
   coordinates(groupId = lib.group, artifactId = name, version = lib.version.str)
   pom { defaultPOM(lib) }
