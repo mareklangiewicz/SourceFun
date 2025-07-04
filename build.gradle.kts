@@ -41,7 +41,7 @@ dependencies {
   // TODO: check separation between api and engine - so I can do similar in ULog (with separate bridges to CLog etc.)
 }
 
-val kgVer = "0.1.12" // https://central.sonatype.com/artifact/pl.mareklangiewicz/kground/versions
+val kgVer = "0.1.13" // https://central.sonatype.com/artifact/pl.mareklangiewicz/kground/versions
 
 setMyWeirdSubstitutions(
   "kground" to kgVer,
