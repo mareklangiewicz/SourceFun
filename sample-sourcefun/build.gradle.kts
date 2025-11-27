@@ -25,7 +25,7 @@ defaultBuildTemplateForRootProject(
     version = Ver(0, 1, 9),
     settings = LibSettings(
       withJs = false,
-      withNativeLinux64 = false,
+      withLinuxX64 = false,
       compose = null,
       withCentralPublish = false,
     ),
